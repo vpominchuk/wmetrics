@@ -1,0 +1,7 @@
+#!/bin/bash
+
+APP_NAME=wmetrics
+
+[ -f $APP_NAME ] && rm $APP_NAME
+
+go build -ldflags "-X 'webmetrics/$APP_NAME/src/app.ExecutableName=$APP_NAME' -X 'webmetrics/$APP_NAME/src/app.GitCommit=`git rev-parse --short HEAD`'" -o $APP_NAME
