@@ -9,18 +9,18 @@ var testers = map[string]TestEngine{
 	"https": &HttpEngine{},
 }
 
-func Test(parameters Parameters) error {
+func Test(parameters Parameters) (MeasurementsResult, error) {
 	resource, err := url.Parse(parameters.Resource)
 
 	if err != nil {
-		return err
+		return MeasurementsResult{}, err
 	}
 
 	testService, ok := testers[resource.Scheme]
 
 	if ok {
-		testService.Test(parameters)
+		return testService.Measure(parameters)
 	}
 
-	return nil
+	return MeasurementsResult{}, nil
 }
