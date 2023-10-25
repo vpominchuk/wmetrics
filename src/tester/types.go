@@ -1,6 +1,7 @@
 package tester
 
 import (
+	"encoding/json"
 	"net/url"
 	"time"
 )
@@ -33,15 +34,30 @@ type HttpEngine struct {
 }
 
 type Timing struct {
-	dnsStart,
-	dnsEnd,
-	tcpConnect,
-	serverConnect,
-	ttfb,
-	tlsHandshakeStart,
-	tlsHandshakeEnd,
-	requestSent,
-	totalTime time.Time
+	Start,
+	DNSStart,
+	DNSEnd,
+	TCPConnect,
+	ServerConnect,
+	TTFB,
+	TLSHandshakeStart,
+	TLSHandshakeEnd,
+	RequestSent,
+	TotalTime time.Time
+}
+
+type Duration struct {
+	Duration,
+	Total time.Duration
+}
+
+type Durations struct {
+	DNSLookup,
+	TCPConnection,
+	TLSHandshake,
+	ConnectionEstablishment,
+	TTFB,
+	Total Duration
 }
 
 type TLS struct {
@@ -54,5 +70,10 @@ type MeasurementsResult struct {
 	StatusCode    int    // e.g. 200
 	ContentLength int64
 	Timing        Timing
+	Durations     Durations
 	TLS           TLS
+}
+
+func (result MeasurementsResult) ToJson() ([]byte, error) {
+	return json.MarshalIndent(result, "", "  ")
 }

@@ -6,9 +6,7 @@ import (
 )
 
 func PrintResults(result tester.MeasurementsResult) {
-	if result.TLS.UseTLS {
-		println(result.TLS.TLSVersion)
-	}
+	resultJson, _ := result.ToJson()
 
-	fmt.Printf("%v", result)
+	fmt.Printf("%s", resultJson)
 }

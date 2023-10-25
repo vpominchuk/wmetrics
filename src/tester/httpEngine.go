@@ -45,7 +45,7 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 	var response *http.Response
 	response, err = client.Do(request)
 
-	result.Timing.totalTime = time.Now()
+	result.Timing.TotalTime = time.Now()
 
 	defer response.Body.Close()
 
@@ -74,9 +74,11 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 		result.TLS.UseTLS = false
 	}
 
-	if result.Timing.dnsStart.IsZero() {
-		result.Timing.dnsStart = result.Timing.dnsEnd
+	if result.Timing.DNSStart.IsZero() {
+		result.Timing.DNSStart = result.Timing.DNSEnd
 	}
+
+	engine.calculateDurations(&result)
 
 	return result, nil
 }
@@ -216,13 +218,16 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 
 func (engine *HttpEngine) newClientTrace(result *MeasurementsResult) *httptrace.ClientTrace {
 	return &httptrace.ClientTrace{
-		GotConn:              func(_ httptrace.GotConnInfo) { result.Timing.serverConnect = time.Now() },
-		GotFirstResponseByte: func() { result.Timing.ttfb = time.Now() },
-		DNSStart:             func(_ httptrace.DNSStartInfo) { result.Timing.dnsStart = time.Now() },
-		DNSDone:              func(_ httptrace.DNSDoneInfo) { result.Timing.dnsEnd = time.Now() },
+		GetConn: func(hostPort string) {
+			result.Timing.Start = time.Now()
+		},
+		GotConn:              func(_ httptrace.GotConnInfo) { result.Timing.ServerConnect = time.Now() },
+		GotFirstResponseByte: func() { result.Timing.TTFB = time.Now() },
+		DNSStart:             func(_ httptrace.DNSStartInfo) { result.Timing.DNSStart = time.Now() },
+		DNSDone:              func(_ httptrace.DNSDoneInfo) { result.Timing.DNSEnd = time.Now() },
 		ConnectStart: func(_, _ string) {
-			if result.Timing.dnsEnd.IsZero() {
-				result.Timing.dnsEnd = time.Now()
+			if result.Timing.DNSEnd.IsZero() {
+				result.Timing.DNSEnd = time.Now()
 			}
 		},
 		ConnectDone: func(net, addr string, err error) {
@@ -230,10 +235,30 @@ func (engine *HttpEngine) newClientTrace(result *MeasurementsResult) *httptrace.
 				panic(fmt.Sprintf("Unable to connect to host %v: %v", addr, err))
 			}
 
-			result.Timing.tcpConnect = time.Now()
+			result.Timing.TCPConnect = time.Now()
 		},
-		TLSHandshakeStart: func() { result.Timing.tlsHandshakeStart = time.Now() },
-		TLSHandshakeDone:  func(_ tls.ConnectionState, _ error) { result.Timing.tlsHandshakeEnd = time.Now() },
-		WroteRequest:      func(_ httptrace.WroteRequestInfo) { result.Timing.requestSent = time.Now() },
+		TLSHandshakeStart: func() { result.Timing.TLSHandshakeStart = time.Now() },
+		TLSHandshakeDone:  func(_ tls.ConnectionState, _ error) { result.Timing.TLSHandshakeEnd = time.Now() },
+		WroteRequest:      func(_ httptrace.WroteRequestInfo) { result.Timing.RequestSent = time.Now() },
 	}
+}
+
+func (engine *HttpEngine) calculateDurations(result *MeasurementsResult) {
+	result.Durations.DNSLookup.Duration = result.Timing.DNSEnd.Sub(result.Timing.DNSStart)
+	result.Durations.DNSLookup.Total = result.Timing.DNSEnd.Sub(result.Timing.Start)
+
+	result.Durations.TCPConnection.Duration = result.Timing.TCPConnect.Sub(result.Timing.DNSEnd)
+	result.Durations.TCPConnection.Total = result.Timing.TCPConnect.Sub(result.Timing.Start)
+
+	result.Durations.TLSHandshake.Duration = result.Timing.TLSHandshakeEnd.Sub(result.Timing.TLSHandshakeStart)
+	result.Durations.TLSHandshake.Total = result.Timing.TLSHandshakeEnd.Sub(result.Timing.Start)
+
+	result.Durations.ConnectionEstablishment.Duration = result.Timing.ServerConnect.Sub(result.Timing.TLSHandshakeEnd)
+	result.Durations.ConnectionEstablishment.Total = result.Timing.ServerConnect.Sub(result.Timing.Start)
+
+	result.Durations.TTFB.Duration = result.Timing.TTFB.Sub(result.Timing.TCPConnect)
+	result.Durations.TTFB.Total = result.Timing.TTFB.Sub(result.Timing.Start)
+
+	result.Durations.Total.Duration = result.Timing.TotalTime.Sub(result.Timing.RequestSent)
+	result.Durations.Total.Total = result.Timing.TotalTime.Sub(result.Timing.Start)
 }
