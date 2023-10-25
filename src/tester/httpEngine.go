@@ -78,6 +78,11 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 		result.Timing.DNSStart = result.Timing.DNSEnd
 	}
 
+	if result.Timing.TLSHandshakeStart.IsZero() {
+		result.Timing.TLSHandshakeStart = result.Timing.TCPConnect
+		result.Timing.TLSHandshakeEnd = result.Timing.TCPConnect
+	}
+
 	engine.calculateDurations(&result)
 
 	return result, nil
@@ -256,7 +261,7 @@ func (engine *HttpEngine) calculateDurations(result *MeasurementsResult) {
 	result.Durations.ConnectionEstablishment.Duration = result.Timing.ServerConnect.Sub(result.Timing.TLSHandshakeEnd)
 	result.Durations.ConnectionEstablishment.Total = result.Timing.ServerConnect.Sub(result.Timing.Start)
 
-	result.Durations.TTFB.Duration = result.Timing.TTFB.Sub(result.Timing.TCPConnect)
+	result.Durations.TTFB.Duration = result.Timing.TTFB.Sub(result.Timing.ServerConnect)
 	result.Durations.TTFB.Total = result.Timing.TTFB.Sub(result.Timing.Start)
 
 	result.Durations.Total.Duration = result.Timing.TotalTime.Sub(result.Timing.RequestSent)
