@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	commandLine "webmetrics/wmetrics/src/args"
 	"webmetrics/wmetrics/src/formatter"
 	"webmetrics/wmetrics/src/tester"
@@ -11,6 +13,14 @@ import (
 
 func main() {
 	arguments, args := commandLine.GetArguments()
+
+	jsonString, _ := json.MarshalIndent(arguments, "", "  ")
+	fmt.Printf("%s\n", jsonString)
+
+	if err := commandLine.Validate(arguments); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	if len(args) == 0 || len(args) > 1 {
 		commandLine.Usage()
@@ -32,7 +42,7 @@ func main() {
 		Requests:              *arguments.Requests.Value,
 		Concurrency:           *arguments.Concurrency.Value,
 		Timeout:               *arguments.Timeout.Value,
-		Method:                *arguments.Method.Value,
+		Method:                strings.ToUpper(*arguments.Method.Value),
 		UserAgent:             *arguments.UserAgent.Value,
 		UserAgentTemplate:     *arguments.UserAgentTemplate.Value,
 		KeepAlive:             *arguments.KeepAlive.Value,
@@ -44,6 +54,10 @@ func main() {
 		IPv6Only:              *arguments.IPv6Only.Value,
 		AllowInsecureSSL:      *arguments.AllowInsecureSSL.Value,
 		ClientCertificateFile: *arguments.ClientCertificateFile.Value,
+		PostDataFile:          *arguments.PostDataFile.Value,
+		PostData:              *arguments.PostData.Value,
+		ContentType:           *arguments.ContentType.Value,
+		FormData:              *arguments.FormData.Value,
 	}
 
 	result, err := tester.Test(parameters)

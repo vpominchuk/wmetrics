@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -36,11 +37,7 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 
 	request = request.WithContext(httptrace.WithClientTrace(context.Background(), trace))
 
-	if userAgent, ok := app.DefaultUserAgents[parameters.UserAgentTemplate]; ok {
-		request.Header.Set("user-agent", userAgent)
-	} else {
-		request.Header.Set("user-agent", parameters.UserAgent)
-	}
+	engine.setHeaders(parameters, request)
 
 	var response *http.Response
 	response, err = client.Do(request)
@@ -86,6 +83,22 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 	engine.calculateDurations(&result)
 
 	return result, nil
+}
+
+func (engine *HttpEngine) setHeaders(parameters Parameters, request *http.Request) {
+	if userAgent, ok := app.DefaultUserAgents[parameters.UserAgentTemplate]; ok {
+		request.Header.Set("user-agent", userAgent)
+	} else {
+		request.Header.Set("user-agent", parameters.UserAgent)
+	}
+
+	if parameters.ContentType != "" {
+		request.Header.Set("content-type", parameters.ContentType)
+	}
+
+	if parameters.FormData != "" {
+		request.Header.Set("content-type", "application/x-www-form-urlencoded")
+	}
 }
 
 func (engine *HttpEngine) newClient(parameters Parameters, request *http.Request) *http.Client {
@@ -209,9 +222,21 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 	case http.MethodHead:
 		request, err = http.NewRequest(http.MethodHead, parameters.Resource, nil)
 	case http.MethodPost:
-		// request, err = http.NewRequest(http.MethodPost, parameters.Resource, nil)
+		postDataFileReader, err := engine.getPostDataReader(parameters)
+
+		if err != nil {
+			panic(err)
+		}
+
+		request, err = http.NewRequest(http.MethodPost, parameters.Resource, postDataFileReader)
 	case http.MethodPut:
-		// request, err = http.NewRequest(http.MethodPut, parameters.Resource, nil)
+		postDataFileReader, err := engine.getPostDataReader(parameters)
+
+		if err != nil {
+			panic(err)
+		}
+
+		request, err = http.NewRequest(http.MethodPut, parameters.Resource, postDataFileReader)
 	case http.MethodPatch:
 		// request, err = http.NewRequest(http.MethodPatch, parameters.Resource, nil)
 	default:
@@ -219,6 +244,39 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 	}
 
 	return request, err
+}
+
+func (engine *HttpEngine) getPostDataReader(parameters Parameters) (io.Reader, error) {
+	if parameters.PostDataFile != "" {
+		return engine.getPostDataFileReader(parameters.PostDataFile)
+	}
+
+	if parameters.FormData != "" {
+		return strings.NewReader(parameters.FormData), nil
+	}
+
+	if parameters.PostData != "" {
+		return strings.NewReader(parameters.PostData), nil
+	}
+
+	return nil, nil
+}
+
+func (engine *HttpEngine) getPostDataFileReader(filename string) (*os.File, error) {
+	if filename == "" {
+		return nil, nil
+	}
+
+	file, err := os.Open(filename)
+
+	if err != nil {
+		return nil, &PostDataFileError{
+			FileName: filename,
+			Err:      err,
+		}
+	}
+
+	return file, nil
 }
 
 func (engine *HttpEngine) newClientTrace(result *MeasurementsResult) *httptrace.ClientTrace {

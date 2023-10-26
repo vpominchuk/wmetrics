@@ -3,33 +3,34 @@ package args
 import (
 	"flag"
 	"fmt"
+	"strings"
 	"time"
 	"webmetrics/wmetrics/src/app"
 )
 
 type stringArgument struct {
-	name         string
+	Name         string
 	help         string
 	defaultValue string
 	Value        *string
 }
 
 type intArgument struct {
-	name         string
+	Name         string
 	help         string
 	defaultValue int
 	Value        *int
 }
 
 type durationArgument struct {
-	name         string
+	Name         string
 	help         string
 	defaultValue time.Duration
 	Value        *time.Duration
 }
 
 type boolArgument struct {
-	name         string
+	Name         string
 	help         string
 	defaultValue bool
 	Value        *bool
@@ -51,146 +52,190 @@ type Arguments struct {
 	IPv6Only              boolArgument
 	AllowInsecureSSL      boolArgument
 	ClientCertificateFile stringArgument
+	PostDataFile          stringArgument
+	PostData              stringArgument
+	ContentType           stringArgument
+	FormData              stringArgument
 }
 
 var arguments = Arguments{
 	Requests: intArgument{
-		name: "n", defaultValue: 1,
+		Name: "n", defaultValue: 1,
 		help: "Number of `requests` to perform",
 	},
 
 	Concurrency: intArgument{
-		name: "c", defaultValue: 1,
+		Name: "c", defaultValue: 1,
 		help: "Number of multiple `requests` to make at a time",
 	},
 
 	Timeout: durationArgument{
-		name: "s", defaultValue: 30 * time.Second,
+		Name: "s", defaultValue: 30 * time.Second,
 		help: "`Milliseconds` to max. wait for each response.",
 	},
 
 	Method: stringArgument{
-		name: "m", defaultValue: "GET",
+		Name: "m", defaultValue: "GET",
 		help: "HTTP `method`",
 	},
 
 	UserAgent: stringArgument{
-		name: "u", defaultValue: app.DefaultUserAgent,
+		Name: "u", defaultValue: app.DefaultUserAgent,
 		help: "`User Agent`",
 	},
 
 	UserAgentTemplate: stringArgument{
-		name: "ut", defaultValue: "",
+		Name: "ut", defaultValue: "",
 		help: "Use `User Agent Template`. Allowed values (chrome, firefox, edge)[-(linux, mac, android, iphone, ipod, ipad)]",
 	},
 
 	KeepAlive: boolArgument{
-		name: "k", defaultValue: false,
+		Name: "k", defaultValue: false,
 		help: "Use HTTP KeepAlive feature",
 	},
 
 	MaxIdleConnections: intArgument{
-		name: "km", defaultValue: 100,
+		Name: "km", defaultValue: 100,
 		help: "Max idle `connections`",
 	},
 
 	IdleConnTimeout: durationArgument{
-		name: "kt", defaultValue: 90 * time.Second,
+		Name: "kt", defaultValue: 90 * time.Second,
 		help: "Max idle connections `timeout` in ms",
 	},
 
 	Proxy: stringArgument{
-		name: "P", defaultValue: "",
+		Name: "P", defaultValue: "",
 		help: "Use proxy. Values may be either a complete `URL` or a \"host[:port]\". The schemes \"http\", \"https\", and \"socks5\" are supported.",
 	},
 
 	TLSHandshakeTimeout: durationArgument{
-		name: "tt", defaultValue: 10 * time.Second,
+		Name: "tt", defaultValue: 10 * time.Second,
 		help: "TLS handshake `timeout` in ms",
 	},
 
 	IPv4Only: boolArgument{
-		name: "4", defaultValue: true,
+		Name: "4", defaultValue: true,
 		help: "Resolve IPv4 addresses only",
 	},
 
 	IPv6Only: boolArgument{
-		name: "6", defaultValue: false,
+		Name: "6", defaultValue: false,
 		help: "Resolve IPv6 addresses only",
 	},
 
 	AllowInsecureSSL: boolArgument{
-		name: "i", defaultValue: false,
+		Name: "i", defaultValue: false,
 		help: "Allow insecure SSL connections",
 	},
 
 	ClientCertificateFile: stringArgument{
-		name: "C", defaultValue: "",
+		Name: "C", defaultValue: "",
 		help: "Client PEM certificate `file`",
+	},
+
+	PostDataFile: stringArgument{
+		Name: "f", defaultValue: "",
+		help: "Post data `file`",
+	},
+
+	PostData: stringArgument{
+		Name: "d", defaultValue: "",
+		help: "Post data `string`",
+	},
+
+	ContentType: stringArgument{
+		Name: "T", defaultValue: "application/json",
+		help: "Content type",
+	},
+
+	FormData: stringArgument{
+		Name: "F", defaultValue: "",
+		help: "Form data",
 	},
 }
 
 func (arguments *Arguments) init() {
 	arguments.Requests.Value = flag.Int(
-		arguments.Requests.name, arguments.Requests.defaultValue, arguments.Requests.help,
+		arguments.Requests.Name, arguments.Requests.defaultValue, arguments.Requests.help,
 	)
 
 	arguments.Concurrency.Value = flag.Int(
-		arguments.Concurrency.name, arguments.Concurrency.defaultValue, arguments.Concurrency.help,
+		arguments.Concurrency.Name, arguments.Concurrency.defaultValue, arguments.Concurrency.help,
 	)
 
 	arguments.Timeout.Value = flag.Duration(
-		arguments.Timeout.name, arguments.Timeout.defaultValue, arguments.Timeout.help,
+		arguments.Timeout.Name, arguments.Timeout.defaultValue, arguments.Timeout.help,
 	)
 
 	arguments.Method.Value = flag.String(
-		arguments.Method.name, arguments.Method.defaultValue, arguments.Method.help,
+		arguments.Method.Name, arguments.Method.defaultValue, arguments.Method.help,
 	)
 
 	arguments.UserAgent.Value = flag.String(
-		arguments.UserAgent.name, arguments.UserAgent.defaultValue, arguments.UserAgent.help,
+		arguments.UserAgent.Name, arguments.UserAgent.defaultValue, arguments.UserAgent.help,
 	)
 
 	arguments.UserAgentTemplate.Value = flag.String(
-		arguments.UserAgentTemplate.name, arguments.UserAgentTemplate.defaultValue, arguments.UserAgentTemplate.help,
+		arguments.UserAgentTemplate.Name, arguments.UserAgentTemplate.defaultValue, arguments.UserAgentTemplate.help,
 	)
 
 	arguments.KeepAlive.Value = flag.Bool(
-		arguments.KeepAlive.name, arguments.KeepAlive.defaultValue, arguments.KeepAlive.help,
+		arguments.KeepAlive.Name, arguments.KeepAlive.defaultValue, arguments.KeepAlive.help,
 	)
 
 	arguments.Proxy.Value = flag.String(
-		arguments.Proxy.name, arguments.Proxy.defaultValue, arguments.Proxy.help,
+		arguments.Proxy.Name, arguments.Proxy.defaultValue, arguments.Proxy.help,
 	)
 
 	arguments.MaxIdleConnections.Value = flag.Int(
-		arguments.MaxIdleConnections.name, arguments.MaxIdleConnections.defaultValue, arguments.MaxIdleConnections.help,
+		arguments.MaxIdleConnections.Name, arguments.MaxIdleConnections.defaultValue, arguments.MaxIdleConnections.help,
 	)
 
 	arguments.IdleConnTimeout.Value = flag.Duration(
-		arguments.IdleConnTimeout.name, arguments.IdleConnTimeout.defaultValue, arguments.IdleConnTimeout.help,
+		arguments.IdleConnTimeout.Name, arguments.IdleConnTimeout.defaultValue, arguments.IdleConnTimeout.help,
 	)
 
 	arguments.TLSHandshakeTimeout.Value = flag.Duration(
-		arguments.TLSHandshakeTimeout.name, arguments.TLSHandshakeTimeout.defaultValue,
+		arguments.TLSHandshakeTimeout.Name, arguments.TLSHandshakeTimeout.defaultValue,
 		arguments.TLSHandshakeTimeout.help,
 	)
 
 	arguments.IPv4Only.Value = flag.Bool(
-		arguments.IPv4Only.name, arguments.IPv4Only.defaultValue, arguments.IPv4Only.help,
+		arguments.IPv4Only.Name, arguments.IPv4Only.defaultValue, arguments.IPv4Only.help,
 	)
 
 	arguments.IPv6Only.Value = flag.Bool(
-		arguments.IPv6Only.name, arguments.IPv6Only.defaultValue, arguments.IPv6Only.help,
+		arguments.IPv6Only.Name, arguments.IPv6Only.defaultValue, arguments.IPv6Only.help,
 	)
 
 	arguments.AllowInsecureSSL.Value = flag.Bool(
-		arguments.AllowInsecureSSL.name, arguments.AllowInsecureSSL.defaultValue, arguments.AllowInsecureSSL.help,
+		arguments.AllowInsecureSSL.Name, arguments.AllowInsecureSSL.defaultValue, arguments.AllowInsecureSSL.help,
 	)
 
 	arguments.ClientCertificateFile.Value = flag.String(
-		arguments.ClientCertificateFile.name, arguments.ClientCertificateFile.defaultValue,
+		arguments.ClientCertificateFile.Name, arguments.ClientCertificateFile.defaultValue,
 		arguments.ClientCertificateFile.help,
+	)
+
+	arguments.PostDataFile.Value = flag.String(
+		arguments.PostDataFile.Name, arguments.PostDataFile.defaultValue,
+		arguments.PostDataFile.help,
+	)
+
+	arguments.PostData.Value = flag.String(
+		arguments.PostData.Name, arguments.PostData.defaultValue,
+		arguments.PostData.help,
+	)
+
+	arguments.ContentType.Value = flag.String(
+		arguments.ContentType.Name, arguments.ContentType.defaultValue,
+		arguments.ContentType.help,
+	)
+
+	arguments.FormData.Value = flag.String(
+		arguments.FormData.Name, arguments.FormData.defaultValue,
+		arguments.FormData.help,
 	)
 
 	flag.Parse()
@@ -210,6 +255,53 @@ func Usage() {
 	fmt.Fprintf(flag.CommandLine.Output(), "\nVersion: %s\n", app.VersionString)
 }
 
-func Validate(arguments Arguments) {
+func Validate(arguments Arguments) error {
+	postDataSources := getPostDataSourcesCount(arguments)
 
+	if postDataSources > 1 {
+		return fmt.Errorf("post data can only be specified once")
+	}
+
+	method := strings.ToUpper(*arguments.Method.Value)
+
+	if arguments.FormData.Value != nil && *arguments.FormData.Value != "" {
+		if arguments.ContentType.Value == nil || *arguments.ContentType.Value == "" {
+			return fmt.Errorf("content type is required for form data. Use -%s", arguments.ContentType.Name)
+		}
+
+		if method != "POST" && method != "PUT" {
+			return fmt.Errorf(
+				"method must be either POST or PUT for form data. Current method: %s. Specify HTTP method using -%s POST or PUT ",
+				method, arguments.Method.Name,
+			)
+		}
+
+		if *arguments.PostData.Value != "" {
+			return fmt.Errorf("form data and post data cannot be used together")
+		}
+
+		if *arguments.PostDataFile.Value != "" {
+			return fmt.Errorf("form data and post data file cannot be used together")
+		}
+	}
+
+	return nil
+}
+
+func getPostDataSourcesCount(arguments Arguments) int {
+	postDataSources := 0
+
+	if *arguments.FormData.Value != "" {
+		postDataSources++
+	}
+
+	if *arguments.PostData.Value != "" {
+		postDataSources++
+	}
+
+	if *arguments.PostDataFile.Value != "" {
+		postDataSources++
+	}
+
+	return postDataSources
 }

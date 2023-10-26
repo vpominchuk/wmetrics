@@ -24,6 +24,10 @@ type Parameters struct {
 	IPv6Only              bool
 	AllowInsecureSSL      bool
 	ClientCertificateFile string
+	PostDataFile          string
+	PostData              string
+	ContentType           string
+	FormData              string
 }
 
 type TestEngine interface {
