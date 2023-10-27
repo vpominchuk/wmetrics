@@ -25,7 +25,7 @@ func (engine *HttpEngine) Measure(parameters Parameters) (MeasurementsResult, er
 
 func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, error) {
 	request, err := engine.newRequest(parameters)
-	client := engine.newClient(parameters, request)
+	client := engine.newClient(parameters, request.Host)
 
 	if err != nil {
 		panic(err)
@@ -34,7 +34,6 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 	var result MeasurementsResult
 
 	trace := engine.newClientTrace(&result)
-
 	request = request.WithContext(httptrace.WithClientTrace(context.Background(), trace))
 
 	engine.setHeaders(parameters, request)
@@ -57,29 +56,7 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 	result.StatusCode = response.StatusCode
 	result.ContentLength = response.ContentLength
 
-	if response.TLS != nil {
-		result.TLS.UseTLS = true
-
-		if response.TLS.Version == tls.VersionTLS12 {
-			result.TLS.TLSVersion = "TLSv1.2"
-		} else if response.TLS.Version == tls.VersionTLS13 {
-			result.TLS.TLSVersion = "TLSv1.3"
-		} else {
-			result.TLS.TLSVersion = "UNKNOWN"
-		}
-	} else {
-		result.TLS.UseTLS = false
-	}
-
-	if result.Timing.DNSStart.IsZero() {
-		result.Timing.DNSStart = result.Timing.DNSEnd
-	}
-
-	if result.Timing.TLSHandshakeStart.IsZero() {
-		result.Timing.TLSHandshakeStart = result.Timing.TCPConnect
-		result.Timing.TLSHandshakeEnd = result.Timing.TCPConnect
-	}
-
+	engine.fillTLSInfo(response, &result)
 	engine.calculateDurations(&result)
 
 	return result, nil
@@ -101,7 +78,7 @@ func (engine *HttpEngine) setHeaders(parameters Parameters, request *http.Reques
 	}
 }
 
-func (engine *HttpEngine) newClient(parameters Parameters, request *http.Request) *http.Client {
+func (engine *HttpEngine) newClient(parameters Parameters, requestHost string) *http.Client {
 	proxyURL, _ := url.Parse(parameters.Proxy)
 
 	var network string
@@ -137,10 +114,10 @@ func (engine *HttpEngine) newClient(parameters Parameters, request *http.Request
 	}
 
 	if parameters.Url.Scheme == "https" {
-		host, _, err := net.SplitHostPort(request.Host)
+		host, _, err := net.SplitHostPort(requestHost)
 
 		if err != nil {
-			host = request.Host
+			host = requestHost
 		}
 
 		certificates, err := engine.readClientPemCertificate(parameters.ClientCertificateFile)
@@ -217,28 +194,16 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 	var err error
 
 	switch parameters.Method {
-	case http.MethodGet:
-		request, err = http.NewRequest(http.MethodGet, parameters.Resource, nil)
-	case http.MethodHead:
-		request, err = http.NewRequest(http.MethodHead, parameters.Resource, nil)
-	case http.MethodPost:
+	case http.MethodGet, http.MethodHead, http.MethodDelete:
+		request, err = http.NewRequest(parameters.Method, parameters.Resource, nil)
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		postDataFileReader, err := engine.getPostDataReader(parameters)
 
 		if err != nil {
 			panic(err)
 		}
 
-		request, err = http.NewRequest(http.MethodPost, parameters.Resource, postDataFileReader)
-	case http.MethodPut:
-		postDataFileReader, err := engine.getPostDataReader(parameters)
-
-		if err != nil {
-			panic(err)
-		}
-
-		request, err = http.NewRequest(http.MethodPut, parameters.Resource, postDataFileReader)
-	case http.MethodPatch:
-		// request, err = http.NewRequest(http.MethodPatch, parameters.Resource, nil)
+		request, err = http.NewRequest(parameters.Method, parameters.Resource, postDataFileReader)
 	default:
 		request, err = http.NewRequest(http.MethodGet, parameters.Resource, nil)
 	}
@@ -307,6 +272,15 @@ func (engine *HttpEngine) newClientTrace(result *MeasurementsResult) *httptrace.
 }
 
 func (engine *HttpEngine) calculateDurations(result *MeasurementsResult) {
+	if result.Timing.DNSStart.IsZero() {
+		result.Timing.DNSStart = result.Timing.DNSEnd
+	}
+
+	if result.Timing.TLSHandshakeStart.IsZero() {
+		result.Timing.TLSHandshakeStart = result.Timing.TCPConnect
+		result.Timing.TLSHandshakeEnd = result.Timing.TCPConnect
+	}
+
 	result.Durations.DNSLookup.Duration = result.Timing.DNSEnd.Sub(result.Timing.DNSStart)
 	result.Durations.DNSLookup.Total = result.Timing.DNSEnd.Sub(result.Timing.Start)
 
@@ -324,4 +298,20 @@ func (engine *HttpEngine) calculateDurations(result *MeasurementsResult) {
 
 	result.Durations.Total.Duration = result.Timing.TotalTime.Sub(result.Timing.RequestSent)
 	result.Durations.Total.Total = result.Timing.TotalTime.Sub(result.Timing.Start)
+}
+
+func (engine *HttpEngine) fillTLSInfo(response *http.Response, result *MeasurementsResult) {
+	if response.TLS != nil {
+		result.TLS.UseTLS = true
+
+		if response.TLS.Version == tls.VersionTLS12 {
+			result.TLS.TLSVersion = "TLSv1.2"
+		} else if response.TLS.Version == tls.VersionTLS13 {
+			result.TLS.TLSVersion = "TLSv1.3"
+		} else {
+			result.TLS.TLSVersion = "UNKNOWN"
+		}
+	} else {
+		result.TLS.UseTLS = false
+	}
 }

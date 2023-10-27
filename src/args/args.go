@@ -3,6 +3,7 @@ package args
 import (
 	"flag"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"webmetrics/wmetrics/src/app"
@@ -264,14 +265,19 @@ func Validate(arguments Arguments) error {
 
 	method := strings.ToUpper(*arguments.Method.Value)
 
+	allowedMethods := []string{"GET", "HEAD", "DELETE", "POST", "PUT", "PATCH"}
+	if !slices.Contains(allowedMethods, method) {
+		return fmt.Errorf("invalid method: %s. Allowed methods are: %v", method, allowedMethods)
+	}
+
 	if arguments.FormData.Value != nil && *arguments.FormData.Value != "" {
 		if arguments.ContentType.Value == nil || *arguments.ContentType.Value == "" {
 			return fmt.Errorf("content type is required for form data. Use -%s", arguments.ContentType.Name)
 		}
 
-		if method != "POST" && method != "PUT" {
+		if method != "POST" && method != "PUT" && method != "PATCH" {
 			return fmt.Errorf(
-				"method must be either POST or PUT for form data. Current method: %s. Specify HTTP method using -%s POST or PUT ",
+				"method must be either POST, PUT or PATCH for form data. Current method: %s. Specify HTTP method using -%s METHOD",
 				method, arguments.Method.Name,
 			)
 		}
