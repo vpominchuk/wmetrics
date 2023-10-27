@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -14,9 +13,6 @@ import (
 func main() {
 	arguments, args := commandLine.GetArguments()
 
-	jsonString, _ := json.MarshalIndent(arguments, "", "  ")
-	fmt.Printf("%s\n", jsonString)
-
 	if err := commandLine.Validate(arguments); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -26,9 +22,6 @@ func main() {
 		commandLine.Usage()
 		os.Exit(1)
 	}
-
-	fmt.Printf("Flags: %v\n", *arguments.Method.Value)
-	fmt.Printf("Args: %v\n", args)
 
 	parsedUrl, err := url.Parse(args[0])
 
@@ -60,13 +53,19 @@ func main() {
 		FormData:              *arguments.FormData.Value,
 	}
 
-	result, err := tester.Test(parameters)
+	results := tester.Test(parameters)
 
-	if err != nil {
-		panic(err)
+	for indx, result := range results {
+		fmt.Printf("Result: %d ", indx)
+
+		formatter.PrintResults(result.RequestResult)
 	}
 
-	formatter.PrintResults(result)
+	// if results[0].Error != nil {
+	// 	panic(results[0].Error)
+	// }
+	//
+	// formatter.PrintResults(results[0].RequestResult)
 
 	// https://pkg.go.dev/net/http#Transport
 }

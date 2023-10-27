@@ -6,10 +6,10 @@ import (
 	"webmetrics/wmetrics/src/tester"
 )
 
-func PrintResults(result tester.MeasurementsResult) {
-	resultJson, _ := result.ToJson()
+func PrintResults(result tester.RequestResult) {
+	// resultJson, _ := result.ToJson()
 
-	fmt.Printf("%s\n", resultJson)
+	// fmt.Printf("%s\n", resultJson)
 
 	fmt.Printf("Total time: %.2f ms\n", toMilliseconds(result.Durations.Total.Total))
 }

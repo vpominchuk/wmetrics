@@ -13,17 +13,55 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"webmetrics/wmetrics/src/app"
 )
 
-func (engine *HttpEngine) Measure(parameters Parameters) (MeasurementsResult, error) {
+func (engine *HttpEngine) Measure(parameters Parameters) []MeasurementResult {
 	parameters.Method = strings.ToUpper(parameters.Method)
 
-	return engine.request(parameters)
+	results := make([]MeasurementResult, 0, parameters.Requests)
+	concurrencyCh := make(chan int, parameters.Concurrency)
+	resultsCh := make(chan MeasurementResult, parameters.Requests)
+
+	var wg sync.WaitGroup
+	wg.Add(parameters.Requests)
+
+	for requestNumber := 0; requestNumber < parameters.Requests; requestNumber++ {
+		concurrencyCh <- requestNumber
+
+		go func() {
+			defer wg.Done()
+
+			result, err := engine.request(parameters)
+
+			resultsCh <- MeasurementResult{
+				RequestResult: result,
+				Error:         err,
+			}
+
+			<-concurrencyCh
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		fmt.Printf("All Go routines completed\n")
+		close(concurrencyCh)
+		close(resultsCh)
+	}()
+
+	for result := range resultsCh {
+		results = append(results, result)
+	}
+
+	fmt.Printf("All results read\n")
+
+	return results
 }
 
-func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, error) {
+func (engine *HttpEngine) request(parameters Parameters) (RequestResult, error) {
 	request, err := engine.newRequest(parameters)
 	client := engine.newClient(parameters, request.Host)
 
@@ -31,7 +69,7 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 		panic(err)
 	}
 
-	var result MeasurementsResult
+	var result RequestResult
 
 	trace := engine.newClientTrace(&result)
 	request = request.WithContext(httptrace.WithClientTrace(context.Background(), trace))
@@ -43,14 +81,14 @@ func (engine *HttpEngine) request(parameters Parameters) (MeasurementsResult, er
 
 	result.Timing.TotalTime = time.Now()
 
-	defer response.Body.Close()
-
 	if err != nil {
 		return result, &ResponseError{
 			Message: "Failed to read response",
 			Err:     err,
 		}
 	}
+
+	defer response.Body.Close()
 
 	result.Status = response.Status
 	result.StatusCode = response.StatusCode
@@ -244,7 +282,7 @@ func (engine *HttpEngine) getPostDataFileReader(filename string) (*os.File, erro
 	return file, nil
 }
 
-func (engine *HttpEngine) newClientTrace(result *MeasurementsResult) *httptrace.ClientTrace {
+func (engine *HttpEngine) newClientTrace(result *RequestResult) *httptrace.ClientTrace {
 	return &httptrace.ClientTrace{
 		GetConn: func(hostPort string) {
 			result.Timing.Start = time.Now()
@@ -271,7 +309,7 @@ func (engine *HttpEngine) newClientTrace(result *MeasurementsResult) *httptrace.
 	}
 }
 
-func (engine *HttpEngine) calculateDurations(result *MeasurementsResult) {
+func (engine *HttpEngine) calculateDurations(result *RequestResult) {
 	if result.Timing.DNSStart.IsZero() {
 		result.Timing.DNSStart = result.Timing.DNSEnd
 	}
@@ -300,7 +338,7 @@ func (engine *HttpEngine) calculateDurations(result *MeasurementsResult) {
 	result.Durations.Total.Total = result.Timing.TotalTime.Sub(result.Timing.Start)
 }
 
-func (engine *HttpEngine) fillTLSInfo(response *http.Response, result *MeasurementsResult) {
+func (engine *HttpEngine) fillTLSInfo(response *http.Response, result *RequestResult) {
 	if response.TLS != nil {
 		result.TLS.UseTLS = true
 

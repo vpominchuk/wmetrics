@@ -31,7 +31,7 @@ type Parameters struct {
 }
 
 type TestEngine interface {
-	Measure(parameters Parameters) (MeasurementsResult, error)
+	Measure(parameters Parameters) []MeasurementResult
 }
 
 type HttpEngine struct {
@@ -69,7 +69,7 @@ type TLS struct {
 	TLSVersion string
 }
 
-type MeasurementsResult struct {
+type RequestResult struct {
 	Status        string // e.g. "200 OK"
 	StatusCode    int    // e.g. 200
 	ContentLength int64
@@ -78,6 +78,11 @@ type MeasurementsResult struct {
 	TLS           TLS
 }
 
-func (result MeasurementsResult) ToJson() ([]byte, error) {
+func (result RequestResult) ToJson() ([]byte, error) {
 	return json.MarshalIndent(result, "", "  ")
+}
+
+type MeasurementResult struct {
+	RequestResult RequestResult
+	Error         error
 }
