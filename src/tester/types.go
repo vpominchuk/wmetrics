@@ -31,10 +31,14 @@ type Parameters struct {
 }
 
 type TestEngine interface {
-	Measure(parameters Parameters) []MeasurementResult
+	Measure(parameters Parameters, onProgress func(progress RequestsProgress)) []MeasurementResult
+	GetProgress() RequestsProgress
 }
 
-type HttpEngine struct {
+type RequestsProgress struct {
+	TotalRequests,
+	CompletedRequests,
+	FailedRequests int
 }
 
 type Timing struct {

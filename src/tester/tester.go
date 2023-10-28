@@ -9,7 +9,7 @@ var testers = map[string]TestEngine{
 	"https": &HttpEngine{},
 }
 
-func Test(parameters Parameters) []MeasurementResult {
+func Test(parameters Parameters, onProgress func(progress RequestsProgress)) []MeasurementResult {
 	resource, err := url.Parse(parameters.Resource)
 
 	if err != nil {
@@ -19,7 +19,7 @@ func Test(parameters Parameters) []MeasurementResult {
 	testService, ok := testers[resource.Scheme]
 
 	if ok {
-		return testService.Measure(parameters)
+		return testService.Measure(parameters, onProgress)
 	}
 
 	return []MeasurementResult{}

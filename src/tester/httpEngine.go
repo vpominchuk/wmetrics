@@ -18,7 +18,21 @@ import (
 	"webmetrics/wmetrics/src/app"
 )
 
-func (engine *HttpEngine) Measure(parameters Parameters) []MeasurementResult {
+type HttpEngine struct {
+	Progress      RequestsProgress
+	progressMutex sync.Mutex
+}
+
+func (engine *HttpEngine) Measure(
+	parameters Parameters,
+	onProgress func(progress RequestsProgress),
+) []MeasurementResult {
+	engine.Progress = RequestsProgress{
+		TotalRequests:     parameters.Requests,
+		CompletedRequests: 0,
+		FailedRequests:    0,
+	}
+
 	parameters.Method = strings.ToUpper(parameters.Method)
 
 	results := make([]MeasurementResult, 0, parameters.Requests)
@@ -26,7 +40,10 @@ func (engine *HttpEngine) Measure(parameters Parameters) []MeasurementResult {
 	resultsCh := make(chan MeasurementResult, parameters.Requests)
 
 	var wg sync.WaitGroup
+
 	wg.Add(parameters.Requests)
+
+	var lastOnProgressCalled int64 = 0
 
 	for requestNumber := 0; requestNumber < parameters.Requests; requestNumber++ {
 		concurrencyCh <- requestNumber
@@ -35,6 +52,13 @@ func (engine *HttpEngine) Measure(parameters Parameters) []MeasurementResult {
 			defer wg.Done()
 
 			result, err := engine.request(parameters)
+
+			engine.updateProgress(err != nil)
+
+			if time.Now().UnixNano()-lastOnProgressCalled >= int64(time.Second) {
+				lastOnProgressCalled = time.Now().UnixNano()
+				onProgress(engine.Progress)
+			}
 
 			resultsCh <- MeasurementResult{
 				RequestResult: result,
@@ -47,7 +71,6 @@ func (engine *HttpEngine) Measure(parameters Parameters) []MeasurementResult {
 
 	go func() {
 		wg.Wait()
-		fmt.Printf("All Go routines completed\n")
 		close(concurrencyCh)
 		close(resultsCh)
 	}()
@@ -56,9 +79,24 @@ func (engine *HttpEngine) Measure(parameters Parameters) []MeasurementResult {
 		results = append(results, result)
 	}
 
-	fmt.Printf("All results read\n")
-
+	onProgress(engine.Progress)
 	return results
+}
+
+func (engine *HttpEngine) updateProgress(updateFailedRequests bool) {
+	engine.progressMutex.Lock()
+
+	engine.Progress.CompletedRequests++
+
+	if updateFailedRequests {
+		engine.Progress.FailedRequests++
+	}
+
+	engine.progressMutex.Unlock()
+}
+
+func (engine *HttpEngine) GetProgress() RequestsProgress {
+	return engine.Progress
 }
 
 func (engine *HttpEngine) request(parameters Parameters) (RequestResult, error) {

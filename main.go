@@ -2,15 +2,40 @@ package main
 
 import (
 	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"net/url"
 	"os"
 	"strings"
 	commandLine "webmetrics/wmetrics/src/args"
-	"webmetrics/wmetrics/src/formatter"
 	"webmetrics/wmetrics/src/tester"
 )
 
 func main() {
+	parameters := getCLIParameters()
+
+	bar := buildProgressBar(parameters)
+
+	// results := tester.Test(
+	tester.Test(
+		parameters,
+		func(progress tester.RequestsProgress) {
+			bar.Set(progress.CompletedRequests)
+		},
+	)
+
+	// for indx, result := range results {
+	// 	fmt.Printf("Result: %d ", indx)
+	//
+	// 	if result.Error == nil {
+	// 		formatter.PrintResults(result.RequestResult)
+	// 	} else {
+	// 		fmt.Printf("Error: %v\n", result.Error)
+	// 	}
+	// }
+	fmt.Printf("\n")
+}
+
+func getCLIParameters() tester.Parameters {
 	arguments, args := commandLine.GetArguments()
 
 	if err := commandLine.Validate(arguments); err != nil {
@@ -29,7 +54,7 @@ func main() {
 		panic(err)
 	}
 
-	parameters := tester.Parameters{
+	return tester.Parameters{
 		Resource:              args[0],
 		Url:                   parsedUrl,
 		Requests:              *arguments.Requests.Value,
@@ -52,20 +77,14 @@ func main() {
 		ContentType:           *arguments.ContentType.Value,
 		FormData:              *arguments.FormData.Value,
 	}
+}
 
-	results := tester.Test(parameters)
-
-	for indx, result := range results {
-		fmt.Printf("Result: %d ", indx)
-
-		formatter.PrintResults(result.RequestResult)
-	}
-
-	// if results[0].Error != nil {
-	// 	panic(results[0].Error)
-	// }
-	//
-	// formatter.PrintResults(results[0].RequestResult)
-
-	// https://pkg.go.dev/net/http#Transport
+func buildProgressBar(parameters tester.Parameters) *progressbar.ProgressBar {
+	return progressbar.NewOptions(
+		parameters.Requests,
+		progressbar.OptionFullWidth(),
+		progressbar.OptionShowCount(),
+		progressbar.OptionShowIts(),
+		progressbar.OptionSetItsString("req"),
+	)
 }
