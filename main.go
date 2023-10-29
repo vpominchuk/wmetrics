@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/schollz/progressbar/v3"
+	"log"
 	"net/url"
 	"os"
 	"strings"
@@ -62,7 +63,7 @@ func getCLIParameters() tester.Parameters {
 	parsedUrl, err := url.Parse(args[0])
 
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error: %v\n", err)
 	}
 
 	return tester.Parameters{

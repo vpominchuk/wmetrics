@@ -80,6 +80,7 @@ type RequestResult struct {
 	Timing        Timing
 	Durations     Durations
 	TLS           TLS
+	Error         error
 }
 
 func (result RequestResult) ToJson() ([]byte, error) {

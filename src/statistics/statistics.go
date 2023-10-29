@@ -1,18 +1,56 @@
 package statistics
 
 import (
+	"slices"
 	"time"
 	"webmetrics/wmetrics/src/tester"
 )
+
+type QuantileResult struct {
+	Segment int
+	Min     time.Duration
+	Max     time.Duration
+}
+
+type ErrorResult struct {
+	Message string
+	Count   int
+}
 
 type Statistics struct {
 	TotalTimeAvg,
 	TotalTimeMin,
 	TotalTimeMax,
+	TotalTimeMedian,
+
 	TotalTime,
+
 	DNSLookupAvg,
 	DNSLookupMin,
-	DNSLookupMax time.Duration
+	DNSLookupMax,
+	DNSLookupMedian,
+
+	TCPConnectionAvg,
+	TCPConnectionMin,
+	TCPConnectionMax,
+	TCPConnectionMedian,
+
+	TLSHandshakeAvg,
+	TLSHandshakeMin,
+	TLSHandshakeMax,
+	TLSHandshakeMedian,
+
+	ConnectionEstablishedAvg,
+	ConnectionEstablishedMin,
+	ConnectionEstablishedMax,
+	ConnectionEstablishedMedian,
+
+	TTFBAvg,
+	TTFBMin,
+	TTFBMax,
+	TTFBMedian time.Duration
+
+	TotalTimePercentage []QuantileResult
 
 	ErrorRequests,
 	SuccessRequests,
@@ -21,22 +59,67 @@ type Statistics struct {
 	Code3xx,
 	Code5xx,
 	OtherCodes int
+
+	Errors []ErrorResult
 }
 
 func GetStatistics(results []tester.MeasurementResult, testDuration time.Duration) (Statistics, error) {
 	var requestTimeAvg, requestTimeMin, requestTimeMax time.Duration
 	var dnsLookupAvg, dnsLookupMin, dnsLookupMax time.Duration
+	var tcpConnectionAvg, tcpConnectionMin, tcpConnectionMax time.Duration
+	var tlsHandshakeAvg, tlsHandshakeMin, tlsHandshakeMax time.Duration
+	var connectionEstablishedAvg, connectionEstablishedMin, connectionEstablishedMax time.Duration
+	var ttfbAvg, ttfbMin, ttfbMax time.Duration
+
+	errors := make(map[string]int)
+
+	var timingPool struct {
+		totalTime, dnsLookup, tcpConnection, tlsHandshake, connectionEstablished, ttfb []time.Duration
+	}
+
 	var errorRequests, successRequests, totalRequests, code2xx, code3xx, code5xx, otherCodes int
 
 	for _, result := range results {
-		if result.Error == nil {
+		if result.Error == nil && result.RequestResult.Error == nil {
 			requestTimeAvg += result.RequestResult.Durations.Total.Total
-			requestTimeMax = maxDuration(requestTimeMax, result.RequestResult.Durations.Total.Total)
 			requestTimeMin = minDuration(requestTimeMin, result.RequestResult.Durations.Total.Total)
+			requestTimeMax = maxDuration(requestTimeMax, result.RequestResult.Durations.Total.Total)
+			timingPool.totalTime = append(timingPool.totalTime, result.RequestResult.Durations.Total.Total)
 
 			dnsLookupAvg += result.RequestResult.Durations.DNSLookup.Duration
-			dnsLookupMax = maxDuration(dnsLookupMax, result.RequestResult.Durations.DNSLookup.Duration)
 			dnsLookupMin = minDuration(dnsLookupMin, result.RequestResult.Durations.DNSLookup.Duration)
+			dnsLookupMax = maxDuration(dnsLookupMax, result.RequestResult.Durations.DNSLookup.Duration)
+			timingPool.dnsLookup = append(timingPool.dnsLookup, result.RequestResult.Durations.DNSLookup.Duration)
+
+			tcpConnectionAvg += result.RequestResult.Durations.TCPConnection.Duration
+			tcpConnectionMax = maxDuration(tcpConnectionMax, result.RequestResult.Durations.TCPConnection.Duration)
+			tcpConnectionMin = minDuration(tcpConnectionMin, result.RequestResult.Durations.TCPConnection.Duration)
+			timingPool.tcpConnection = append(
+				timingPool.tcpConnection, result.RequestResult.Durations.TCPConnection.Duration,
+			)
+
+			tlsHandshakeAvg += result.RequestResult.Durations.TLSHandshake.Duration
+			tlsHandshakeMin = minDuration(tlsHandshakeMin, result.RequestResult.Durations.TLSHandshake.Duration)
+			tlsHandshakeMax = maxDuration(tlsHandshakeMax, result.RequestResult.Durations.TLSHandshake.Duration)
+			timingPool.tlsHandshake = append(
+				timingPool.tlsHandshake, result.RequestResult.Durations.TLSHandshake.Duration,
+			)
+
+			connectionEstablishedAvg += result.RequestResult.Durations.ConnectionEstablishment.Duration
+			connectionEstablishedMin = minDuration(
+				connectionEstablishedMin, result.RequestResult.Durations.ConnectionEstablishment.Duration,
+			)
+			connectionEstablishedMax = maxDuration(
+				connectionEstablishedMax, result.RequestResult.Durations.ConnectionEstablishment.Duration,
+			)
+			timingPool.connectionEstablished = append(
+				timingPool.connectionEstablished, result.RequestResult.Durations.ConnectionEstablishment.Duration,
+			)
+
+			ttfbAvg += result.RequestResult.Durations.TTFB.Duration
+			ttfbMin = minDuration(ttfbMin, result.RequestResult.Durations.TTFB.Duration)
+			ttfbMax = maxDuration(ttfbMax, result.RequestResult.Durations.TTFB.Duration)
+			timingPool.ttfb = append(timingPool.ttfb, result.RequestResult.Durations.TTFB.Duration)
 
 			successRequests++
 
@@ -53,17 +136,59 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 			errorRequests++
 		}
 
+		if result.Error != nil {
+			errors[result.Error.Error()]++
+		}
+
+		if result.RequestResult.Error != nil {
+			errors[result.RequestResult.Error.Error()]++
+		}
+
 		totalRequests++
 	}
 
-	return Statistics{
-		TotalTimeAvg: requestTimeAvg / time.Duration(len(results)),
-		TotalTimeMin: requestTimeMin,
-		TotalTimeMax: requestTimeMax,
+	errorResult := make([]ErrorResult, 0, len(errors))
 
-		DNSLookupAvg: dnsLookupAvg / time.Duration(len(results)),
-		DNSLookupMax: dnsLookupMax,
-		DNSLookupMin: dnsLookupMin,
+	for err, count := range errors {
+		errorResult = append(
+			errorResult, ErrorResult{
+				Message: err,
+				Count:   count,
+			},
+		)
+	}
+
+	return Statistics{
+		TotalTimeAvg:        requestTimeAvg / time.Duration(len(results)),
+		TotalTimeMin:        requestTimeMin,
+		TotalTimeMax:        requestTimeMax,
+		TotalTimeMedian:     calculateDurationMedian(timingPool.totalTime),
+		TotalTimePercentage: splitDataIntoSegments(timingPool.totalTime, 10),
+
+		DNSLookupAvg:    dnsLookupAvg / time.Duration(len(results)),
+		DNSLookupMin:    dnsLookupMin,
+		DNSLookupMax:    dnsLookupMax,
+		DNSLookupMedian: calculateDurationMedian(timingPool.dnsLookup),
+
+		TCPConnectionAvg:    tcpConnectionAvg / time.Duration(len(results)),
+		TCPConnectionMin:    tcpConnectionMin,
+		TCPConnectionMax:    tcpConnectionMax,
+		TCPConnectionMedian: calculateDurationMedian(timingPool.tcpConnection),
+
+		TLSHandshakeAvg:    tlsHandshakeAvg / time.Duration(len(results)),
+		TLSHandshakeMin:    tlsHandshakeMin,
+		TLSHandshakeMax:    tlsHandshakeMax,
+		TLSHandshakeMedian: calculateDurationMedian(timingPool.tlsHandshake),
+
+		ConnectionEstablishedAvg:    connectionEstablishedAvg / time.Duration(len(results)),
+		ConnectionEstablishedMin:    connectionEstablishedMin,
+		ConnectionEstablishedMax:    connectionEstablishedMax,
+		ConnectionEstablishedMedian: calculateDurationMedian(timingPool.connectionEstablished),
+
+		TTFBAvg:    ttfbAvg / time.Duration(len(results)),
+		TTFBMin:    ttfbMin,
+		TTFBMax:    ttfbMax,
+		TTFBMedian: calculateDurationMedian(timingPool.ttfb),
 
 		TotalTime:       testDuration,
 		ErrorRequests:   errorRequests,
@@ -73,6 +198,8 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 		Code3xx:         code3xx,
 		Code5xx:         code5xx,
 		OtherCodes:      otherCodes,
+
+		Errors: errorResult,
 	}, nil
 }
 
@@ -90,4 +217,63 @@ func minDuration(a, b time.Duration) time.Duration {
 	}
 
 	return a
+}
+
+func calculateDurationMedian(data []time.Duration) time.Duration {
+	slices.Sort(data)
+
+	n := len(data)
+
+	if n == 0 {
+		return 0
+	}
+
+	if n%2 == 1 {
+		return data[n/2]
+	}
+
+	return (data[n/2-1] + data[n/2]) / 2
+}
+
+func splitDataIntoSegments(data []time.Duration, numSegments int) []QuantileResult {
+	dataLength := len(data)
+
+	if dataLength == 0 || numSegments <= 0 {
+		return nil
+	}
+
+	slices.Sort(data)
+
+	segmentSize := dataLength / numSegments
+	segments := make([]QuantileResult, 0, numSegments)
+
+	if dataLength < numSegments {
+		segments = append(
+			segments, QuantileResult{
+				Segment: numSegments,
+				Min:     data[0],
+				Max:     data[dataLength-1],
+			},
+		)
+
+		return segments
+	}
+
+	for i := 0; i < numSegments; i++ {
+		startIndex := i * segmentSize
+		endIndex := (i + 1) * segmentSize
+
+		minValue := data[startIndex]
+		maxValue := data[endIndex-1]
+
+		segments = append(
+			segments, QuantileResult{
+				Segment: i + 1,
+				Min:     minValue,
+				Max:     maxValue,
+			},
+		)
+	}
+
+	return segments
 }

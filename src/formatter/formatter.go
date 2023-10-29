@@ -15,10 +15,11 @@ func PrintResults(stat statistics.Statistics) {
 	fmt.Printf(strPadRight("Failed requests:", strLength)+"%d\n", stat.ErrorRequests)
 
 	fmt.Println("\nPerformance Metrics:")
-	fmt.Printf(strPadRight("Total time taken for tests:", strLength)+"%.3f seconds\n", toSeconds(stat.TotalTime))
+	fmt.Printf(strPadRight("Total time taken for tests:", strLength)+"%s\n", toTimeString(stat.TotalTime))
 	fmt.Printf(strPadRight("Time per request (avg):", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeAvg))
-	fmt.Printf(strPadRight("Min time per request:", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeMin))
-	fmt.Printf(strPadRight("Max time per request:", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeMax))
+	fmt.Printf(strPadRight("Time per request (median):", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeMedian))
+	fmt.Printf(strPadRight("Time per request (min):", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeMin))
+	fmt.Printf(strPadRight("Time per request (max):", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeMax))
 	fmt.Printf(
 		strPadRight("Requests per second:", strLength)+"%.2f\n", float64(stat.TotalRequests)/toSeconds(stat.TotalTime),
 	)
@@ -40,22 +41,75 @@ func PrintResults(stat statistics.Statistics) {
 	}
 
 	fmt.Println(
-		strPadRight("\nConnection Metrics:", strLength+3) + strPadRight("(avg)", 12) +
-			strPadRight("(min)", 12) +
-			strPadRight("(max)", 12),
+		strPadRight("\nConnection Metrics:", strLength+3) +
+			strPadRight("(avg)", 13) +
+			strPadRight("(median)", 17) +
+			strPadRight("(min)", 15) +
+			strPadRight("(max)", 15),
 	)
 
 	printDurations(
-		"DNS lookup time:",
-		toMilliseconds(stat.DNSLookupAvg),
-		toMilliseconds(stat.DNSLookupMin),
-		toMilliseconds(stat.DNSLookupMax),
+		"DNS lookup:",
+		toTimeString(stat.DNSLookupAvg),
+		toTimeString(stat.DNSLookupMedian),
+		toTimeString(stat.DNSLookupMin),
+		toTimeString(stat.DNSLookupMax),
 		strLength,
 	)
-	// fmt.Printf(strPadRight("DNS lookup time:", strLength))
-	// fmt.Print(strPadRight(fmt.Sprintf("%.3f ms", toMilliseconds(stat.DNSLookupAvg)), 12))
-	// fmt.Print(strPadRight(fmt.Sprintf("%.3f ms", toMilliseconds(stat.DNSLookupMin)), 12))
-	// fmt.Print(strPadRight(fmt.Sprintf("%.3f ms\n", toMilliseconds(stat.DNSLookupMax)), 12))
+
+	printDurations(
+		"TCP connection:",
+		toTimeString(stat.TCPConnectionAvg),
+		toTimeString(stat.TCPConnectionMedian),
+		toTimeString(stat.TCPConnectionMin),
+		toTimeString(stat.TCPConnectionMax),
+		strLength,
+	)
+
+	printDurations(
+		"TLS handshake:",
+		toTimeString(stat.TLSHandshakeAvg),
+		toTimeString(stat.TLSHandshakeMedian),
+		toTimeString(stat.TLSHandshakeMin),
+		toTimeString(stat.TLSHandshakeMax),
+		strLength,
+	)
+
+	printDurations(
+		"Connection established:",
+		toTimeString(stat.ConnectionEstablishedAvg),
+		toTimeString(stat.ConnectionEstablishedMedian),
+		toTimeString(stat.ConnectionEstablishedMin),
+		toTimeString(stat.ConnectionEstablishedMax),
+		strLength,
+	)
+
+	printDurations(
+		"TTFB:",
+		toTimeString(stat.TTFBAvg),
+		toTimeString(stat.TTFBMedian),
+		toTimeString(stat.TTFBMin),
+		toTimeString(stat.TTFBMax),
+		strLength,
+	)
+
+	if stat.TotalTimePercentage != nil && len(stat.TotalTimePercentage) > 0 {
+		fmt.Println("\nPercentage of the requests served within a certain time (ms):")
+
+		for _, result := range stat.TotalTimePercentage {
+			fmt.Print(strPadRight(fmt.Sprintf("%d%%", result.Segment*10), 7))
+			fmt.Print(strPadRight(fmt.Sprintf("%.3f ms", toMilliseconds((result.Min+result.Max)/2)), 15))
+			fmt.Printf("(%.3f - %.3f ms)\n", toMilliseconds(result.Min), toMilliseconds(result.Max))
+		}
+	}
+
+	if stat.Errors != nil && len(stat.Errors) > 0 {
+		fmt.Println("\nErrors:")
+
+		for _, result := range stat.Errors {
+			fmt.Printf("%s (%d times)\n", result.Message, result.Count)
+		}
+	}
 }
 
 func toMilliseconds(duration time.Duration) float64 {
@@ -64,6 +118,14 @@ func toMilliseconds(duration time.Duration) float64 {
 
 func toSeconds(duration time.Duration) float64 {
 	return float64(duration) / float64(time.Second)
+}
+
+func toTimeString(duration time.Duration) string {
+	if duration < time.Second {
+		return fmt.Sprintf("%.3f ms", toMilliseconds(duration))
+	} else {
+		return fmt.Sprintf("%.3f s", toSeconds(duration))
+	}
 }
 
 func strPadRight(string string, count int) string {
@@ -76,11 +138,12 @@ func strPadRight(string string, count int) string {
 	return string + strings.Repeat(" ", padLength)
 }
 
-func printDurations(title string, avg, min, max float64, strLength int) {
+func printDurations(title string, avg, median, min, max string, strLength int) {
 	fmt.Println(
-		strPadRight("DNS lookup time:", strLength) +
-			strPadRight(fmt.Sprintf("%.3f ms", avg), 12) +
-			strPadRight(fmt.Sprintf("%.3f ms", min), 12) +
-			strPadRight(fmt.Sprintf("%.3f ms\n", max), 12),
+		strPadRight(title, strLength) +
+			strPadRight(fmt.Sprintf("%s", avg), 15) +
+			strPadRight(fmt.Sprintf("%s", median), 15) +
+			strPadRight(fmt.Sprintf("%s", min), 15) +
+			strPadRight(fmt.Sprintf("%s", max), 15),
 	)
 }

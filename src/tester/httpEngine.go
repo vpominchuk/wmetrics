@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/pem"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -110,7 +109,7 @@ func (engine *HttpEngine) request(parameters Parameters) (RequestResult, error) 
 	client := engine.newClient(parameters, request.Host)
 
 	if err != nil {
-		panic(err)
+		return RequestResult{}, err
 	}
 
 	var result RequestResult
@@ -205,7 +204,7 @@ func (engine *HttpEngine) newClient(parameters Parameters, requestHost string) *
 		certificates, err := engine.readClientPemCertificate(parameters.ClientCertificateFile)
 
 		if err != nil {
-			panic(err)
+			log.Fatalf("Error: %v", err)
 		}
 
 		transport.TLSClientConfig = &tls.Config{
@@ -282,7 +281,7 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 		postDataFileReader, err := engine.getPostDataReader(parameters)
 
 		if err != nil {
-			panic(err)
+			log.Fatalf("Error: %v", err)
 		}
 
 		request, err = http.NewRequest(parameters.Method, parameters.Resource, postDataFileReader)
@@ -341,10 +340,7 @@ func (engine *HttpEngine) newClientTrace(result *RequestResult) *httptrace.Clien
 			}
 		},
 		ConnectDone: func(net, addr string, err error) {
-			if err != nil {
-				panic(fmt.Sprintf("Unable to connect to host %v: %v", addr, err))
-			}
-
+			result.Error = err
 			result.Timing.TCPConnect = time.Now()
 		},
 		TLSHandshakeStart: func() { result.Timing.TLSHandshakeStart = time.Now() },
