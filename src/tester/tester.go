@@ -2,6 +2,7 @@ package tester
 
 import (
 	"net/url"
+	"time"
 )
 
 var testers = map[string]TestEngine{
@@ -9,11 +10,11 @@ var testers = map[string]TestEngine{
 	"https": &HttpEngine{},
 }
 
-func Test(parameters Parameters, onProgress func(progress RequestsProgress)) []MeasurementResult {
+func Test(parameters Parameters, onProgress func(progress RequestsProgress)) ([]MeasurementResult, time.Duration) {
 	resource, err := url.Parse(parameters.Resource)
 
 	if err != nil {
-		return []MeasurementResult{}
+		return []MeasurementResult{}, 0
 	}
 
 	testService, ok := testers[resource.Scheme]
@@ -22,5 +23,5 @@ func Test(parameters Parameters, onProgress func(progress RequestsProgress)) []M
 		return testService.Measure(parameters, onProgress)
 	}
 
-	return []MeasurementResult{}
+	return []MeasurementResult{}, 0
 }

@@ -31,7 +31,7 @@ type Parameters struct {
 }
 
 type TestEngine interface {
-	Measure(parameters Parameters, onProgress func(progress RequestsProgress)) []MeasurementResult
+	Measure(parameters Parameters, onProgress func(progress RequestsProgress)) ([]MeasurementResult, time.Duration)
 	GetProgress() RequestsProgress
 }
 

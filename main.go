@@ -6,22 +6,33 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
+	"webmetrics/wmetrics/src/app"
 	commandLine "webmetrics/wmetrics/src/args"
+	"webmetrics/wmetrics/src/formatter"
+	"webmetrics/wmetrics/src/statistics"
 	"webmetrics/wmetrics/src/tester"
 )
 
 func main() {
 	parameters := getCLIParameters()
 
+	showGreetings(parameters)
+
 	bar := buildProgressBar(parameters)
 
-	// results := tester.Test(
-	tester.Test(
+	results, testDuration := tester.Test(
 		parameters,
 		func(progress tester.RequestsProgress) {
 			bar.Set(progress.CompletedRequests)
 		},
 	)
+
+	stat, _ := statistics.GetStatistics(results, testDuration)
+
+	fmt.Print("\n\n\n")
+
+	formatter.PrintResults(stat)
 
 	// for indx, result := range results {
 	// 	fmt.Printf("Result: %d ", indx)
@@ -84,7 +95,22 @@ func buildProgressBar(parameters tester.Parameters) *progressbar.ProgressBar {
 		parameters.Requests,
 		progressbar.OptionFullWidth(),
 		progressbar.OptionShowCount(),
-		progressbar.OptionShowIts(),
-		progressbar.OptionSetItsString("req"),
 	)
+}
+
+func showGreetings(parameters tester.Parameters) {
+	fmt.Printf("%s %s\n", app.ExecutableName, app.VersionString)
+	fmt.Printf("Copyright %d Vasyl Pominchuk\n", time.Now().Year())
+	fmt.Printf(
+		"Performing %d requests with concurrency level of %d\n",
+		parameters.Requests,
+		parameters.Concurrency,
+	)
+	fmt.Printf(
+		"%s %s\n",
+		parameters.Method,
+		parameters.Resource,
+	)
+
+	fmt.Printf("\n")
 }

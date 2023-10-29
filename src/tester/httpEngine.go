@@ -26,7 +26,7 @@ type HttpEngine struct {
 func (engine *HttpEngine) Measure(
 	parameters Parameters,
 	onProgress func(progress RequestsProgress),
-) []MeasurementResult {
+) ([]MeasurementResult, time.Duration) {
 	engine.Progress = RequestsProgress{
 		TotalRequests:     parameters.Requests,
 		CompletedRequests: 0,
@@ -40,10 +40,13 @@ func (engine *HttpEngine) Measure(
 	resultsCh := make(chan MeasurementResult, parameters.Requests)
 
 	var wg sync.WaitGroup
+	var lastOnProgressCalled int64 = 0
+	var testStartTime time.Time
+	var testDuration time.Duration
 
 	wg.Add(parameters.Requests)
 
-	var lastOnProgressCalled int64 = 0
+	testStartTime = time.Now()
 
 	for requestNumber := 0; requestNumber < parameters.Requests; requestNumber++ {
 		concurrencyCh <- requestNumber
@@ -71,6 +74,9 @@ func (engine *HttpEngine) Measure(
 
 	go func() {
 		wg.Wait()
+
+		testDuration = time.Now().Sub(testStartTime)
+
 		close(concurrencyCh)
 		close(resultsCh)
 	}()
@@ -80,7 +86,7 @@ func (engine *HttpEngine) Measure(
 	}
 
 	onProgress(engine.Progress)
-	return results
+	return results, testDuration
 }
 
 func (engine *HttpEngine) updateProgress(updateFailedRequests bool) {
