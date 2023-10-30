@@ -61,6 +61,8 @@ type Statistics struct {
 	Code5xx,
 	OtherCodes int
 
+	Server, PoweredBy string
+
 	Errors []ErrorResult
 }
 
@@ -160,7 +162,16 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 		)
 	}
 
+	server, poweredBy := "", ""
+
+	if len(results) > 0 {
+		server = results[0].RequestResult.Headers.Server
+		poweredBy = results[0].RequestResult.Headers.PoweredBy
+	}
+
 	return Statistics{
+		Server:              server,
+		PoweredBy:           poweredBy,
 		RequestTimeAvg:      requestTimeAvg / time.Duration(len(results)),
 		RequestTimeMin:      requestTimeMin,
 		RequestTimeMax:      requestTimeMax,

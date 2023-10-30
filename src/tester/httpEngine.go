@@ -139,6 +139,7 @@ func (engine *HttpEngine) request(parameters Parameters) (RequestResult, error) 
 
 	engine.fillTLSInfo(response, &result)
 	engine.calculateDurations(&result)
+	engine.fillHeaders(response, &result)
 
 	return result, nil
 }
@@ -392,4 +393,9 @@ func (engine *HttpEngine) fillTLSInfo(response *http.Response, result *RequestRe
 	} else {
 		result.TLS.UseTLS = false
 	}
+}
+
+func (engine *HttpEngine) fillHeaders(response *http.Response, result *RequestResult) {
+	result.Headers.Server = response.Header.Get("server")
+	result.Headers.PoweredBy = response.Header.Get("x-powered-by")
 }

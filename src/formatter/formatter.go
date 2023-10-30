@@ -30,6 +30,14 @@ func PrintJsonResults(stat statistics.Statistics, pretty bool) {
 func PrintResults(stat statistics.Statistics) {
 	strLength := 30
 
+	if stat.Server != "" {
+		fmt.Printf(StrPadRight("Server:", strLength)+"%s\n", stat.Server)
+	}
+
+	if stat.PoweredBy != "" {
+		fmt.Printf(StrPadRight("Powered By:", strLength)+"%s\n", stat.PoweredBy)
+	}
+
 	fmt.Printf(StrPadRight("Complete requests:", strLength)+"%d\n", stat.TotalRequests)
 	fmt.Printf(StrPadRight("Successful requests:", strLength)+"%d\n", stat.SuccessRequests)
 	fmt.Printf(StrPadRight("Failed requests:", strLength)+"%d\n", stat.ErrorRequests)

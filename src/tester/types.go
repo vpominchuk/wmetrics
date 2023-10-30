@@ -74,6 +74,11 @@ type TLS struct {
 	TLSVersion string
 }
 
+type ResponseHeaders struct {
+	Server,
+	PoweredBy string
+}
+
 type RequestResult struct {
 	Status        string // e.g. "200 OK"
 	StatusCode    int    // e.g. 200
@@ -81,6 +86,7 @@ type RequestResult struct {
 	Timing        Timing
 	Durations     Durations
 	TLS           TLS
+	Headers       ResponseHeaders
 	Error         error
 }
 
