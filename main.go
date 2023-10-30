@@ -18,33 +18,55 @@ import (
 func main() {
 	parameters := getCLIParameters()
 
-	showGreetings(parameters)
+	if canPrintGreetings(parameters.OutputFormat) {
+		showGreetings(parameters)
+	}
 
-	bar := buildProgressBar(parameters)
+	var bar *progressbar.ProgressBar
+
+	if canPrintProgressBar(parameters.OutputFormat) {
+		bar = buildProgressBar(parameters)
+	}
 
 	results, testDuration := tester.Test(
 		parameters,
 		func(progress tester.RequestsProgress) {
-			bar.Set(progress.CompletedRequests)
+			if bar != nil {
+				bar.Set(progress.CompletedRequests)
+			}
 		},
 	)
 
 	stat, _ := statistics.GetStatistics(results, testDuration)
 
-	fmt.Print("\n\n\n")
+	if canPrintGreetings(parameters.OutputFormat) {
+		fmt.Print("\n\n\n")
+	}
 
-	formatter.PrintResults(stat)
+	printResults(parameters.OutputFormat, stat)
 
-	// for indx, result := range results {
-	// 	fmt.Printf("Result: %d ", indx)
-	//
-	// 	if result.Error == nil {
-	// 		formatter.PrintResults(result.RequestResult)
-	// 	} else {
-	// 		fmt.Printf("Error: %v\n", result.Error)
-	// 	}
-	// }
-	fmt.Printf("\n")
+	if canPrintGreetings(parameters.OutputFormat) {
+		fmt.Printf("\n")
+	}
+}
+
+func canPrintProgressBar(format string) bool {
+	return strings.ToLower(format) == "std"
+}
+
+func canPrintGreetings(format string) bool {
+	return strings.ToLower(format) == "std" || strings.ToLower(format) == "text"
+}
+
+func printResults(format string, stat statistics.Statistics) {
+	switch strings.ToLower(format) {
+	case "std", "text":
+		formatter.PrintResults(stat)
+	case "json":
+		formatter.PrintJsonResults(stat, false)
+	case "json-pretty":
+		formatter.PrintJsonResults(stat, true)
+	}
 }
 
 func getCLIParameters() tester.Parameters {
@@ -88,6 +110,7 @@ func getCLIParameters() tester.Parameters {
 		PostData:              *arguments.PostData.Value,
 		ContentType:           *arguments.ContentType.Value,
 		FormData:              *arguments.FormData.Value,
+		OutputFormat:          *arguments.OutputFormat.Value,
 	}
 }
 

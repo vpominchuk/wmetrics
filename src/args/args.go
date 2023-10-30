@@ -55,6 +55,7 @@ type Arguments struct {
 	PostData              stringArgument
 	ContentType           stringArgument
 	FormData              stringArgument
+	OutputFormat          stringArgument
 }
 
 var arguments = Arguments{
@@ -85,7 +86,7 @@ var arguments = Arguments{
 
 	UserAgentTemplate: stringArgument{
 		Name: "ut", defaultValue: "",
-		help: "Use `User Agent Template`. Allowed values (chrome, firefox, edge)[-(linux, mac, android, iphone, ipod, ipad)]",
+		help: "Use `User Agent Template`. Allowed values (chrome, firefox, edge)[-(linux, mac, android, iphone, ipod, ipad)] [-ut list] to see all templates",
 	},
 
 	KeepAlive: boolArgument{
@@ -151,6 +152,11 @@ var arguments = Arguments{
 	FormData: stringArgument{
 		Name: "F", defaultValue: "",
 		help: "Form data",
+	},
+
+	OutputFormat: stringArgument{
+		Name: "O", defaultValue: "std",
+		help: "Output `format`. Allowed values (std, text, json)",
 	},
 }
 
@@ -235,6 +241,11 @@ func (arguments *Arguments) init() {
 	arguments.FormData.Value = flag.String(
 		arguments.FormData.Name, arguments.FormData.defaultValue,
 		arguments.FormData.help,
+	)
+
+	arguments.OutputFormat.Value = flag.String(
+		arguments.OutputFormat.Name, arguments.OutputFormat.defaultValue,
+		arguments.OutputFormat.help,
 	)
 
 	flag.Parse()

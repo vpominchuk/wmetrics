@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"webmetrics/wmetrics/src/app"
+	"webmetrics/wmetrics/src/formatter"
 )
 
 func Validate(arguments Arguments) error {
@@ -22,6 +24,13 @@ func Validate(arguments Arguments) error {
 	allowedMethods := []string{"GET", "HEAD", "DELETE", "POST", "PUT", "PATCH"}
 	if !slices.Contains(allowedMethods, method) {
 		return fmt.Errorf("invalid method: %s. Allowed methods are: %v", method, allowedMethods)
+	}
+
+	allowedOutputFormats := []string{"std", "text", "json", "json-pretty"}
+	if !slices.Contains(allowedOutputFormats, *arguments.OutputFormat.Value) {
+		return fmt.Errorf(
+			"invalid output format: %s. Allowed formats are: %v", *arguments.OutputFormat.Value, allowedOutputFormats,
+		)
 	}
 
 	if arguments.FormData.Value != nil && *arguments.FormData.Value != "" {
@@ -45,7 +54,30 @@ func Validate(arguments Arguments) error {
 		}
 	}
 
+	if arguments.UserAgentTemplate.Value != nil && *arguments.UserAgentTemplate.Value != "" {
+		if *arguments.UserAgentTemplate.Value == "list" {
+			return fmt.Errorf("Allowed templates are: \n%s", getAllowedUserAgentTemplates())
+		}
+
+		if _, ok := app.DefaultUserAgents[*arguments.UserAgentTemplate.Value]; !ok {
+			errorStr := fmt.Sprintf("invalid user agent template: %s.", *arguments.UserAgentTemplate.Value)
+
+			return fmt.Errorf(errorStr)
+		}
+	}
+
 	return nil
+}
+
+func getAllowedUserAgentTemplates() string {
+	result := ""
+
+	for template, ua := range app.DefaultUserAgents {
+		templateName := formatter.StrPadRight(template, 20)
+		result += templateName + fmt.Sprintf(" %s\n", ua)
+	}
+
+	return result
 }
 
 func getPostDataSourcesCount(arguments Arguments) int {

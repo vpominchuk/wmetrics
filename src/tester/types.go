@@ -28,6 +28,7 @@ type Parameters struct {
 	PostData              string
 	ContentType           string
 	FormData              string
+	OutputFormat          string
 }
 
 type TestEngine interface {

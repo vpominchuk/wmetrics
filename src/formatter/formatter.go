@@ -1,51 +1,75 @@
 package formatter
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 	"webmetrics/wmetrics/src/statistics"
 )
 
+func PrintJsonResults(stat statistics.Statistics, pretty bool) {
+	var jsonData []byte
+	var err error
+
+	if pretty {
+		jsonData, err = json.MarshalIndent(stat, "", "  ")
+	} else {
+		jsonData, err = json.Marshal(stat)
+	}
+
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+		return
+	}
+
+	fmt.Println(string(jsonData))
+}
+
 func PrintResults(stat statistics.Statistics) {
 	strLength := 30
 
-	fmt.Printf(strPadRight("Complete requests:", strLength)+"%d\n", stat.TotalRequests)
-	fmt.Printf(strPadRight("Successful requests:", strLength)+"%d\n", stat.SuccessRequests)
-	fmt.Printf(strPadRight("Failed requests:", strLength)+"%d\n", stat.ErrorRequests)
+	fmt.Printf(StrPadRight("Complete requests:", strLength)+"%d\n", stat.TotalRequests)
+	fmt.Printf(StrPadRight("Successful requests:", strLength)+"%d\n", stat.SuccessRequests)
+	fmt.Printf(StrPadRight("Failed requests:", strLength)+"%d\n", stat.ErrorRequests)
 
 	fmt.Println("\nPerformance Metrics:")
-	fmt.Printf(strPadRight("Total time taken for tests:", strLength)+"%s\n", toTimeString(stat.TotalTime))
-	fmt.Printf(strPadRight("Time per request (avg):", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeAvg))
-	fmt.Printf(strPadRight("Time per request (median):", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeMedian))
-	fmt.Printf(strPadRight("Time per request (min):", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeMin))
-	fmt.Printf(strPadRight("Time per request (max):", strLength)+"%.3f ms\n", toMilliseconds(stat.TotalTimeMax))
+	fmt.Printf(StrPadRight("Total time taken for tests:", strLength)+"%s\n", toTimeString(stat.TotalTime))
+	fmt.Printf(StrPadRight("Time per request (avg):", strLength)+"%.3f ms\n", toMilliseconds(stat.RequestTimeAvg))
+	fmt.Printf(StrPadRight("Time per request (median):", strLength)+"%.3f ms\n", toMilliseconds(stat.RequestTimeMedian))
+	fmt.Printf(StrPadRight("Time per request (min):", strLength)+"%.3f ms\n", toMilliseconds(stat.RequestTimeMin))
+	fmt.Printf(StrPadRight("Time per request (max):", strLength)+"%.3f ms\n", toMilliseconds(stat.RequestTimeMax))
 	fmt.Printf(
-		strPadRight("Requests per second:", strLength)+"%.2f\n", float64(stat.TotalRequests)/toSeconds(stat.TotalTime),
+		StrPadRight("Requests per second:", strLength)+"%.2f\n", float64(stat.TotalRequests)/toSeconds(stat.TotalTime),
 	)
 
 	if stat.Code2xx > 0 {
-		fmt.Printf(strPadRight("2xx responses:", strLength)+"%d\n", stat.Code2xx)
+		fmt.Printf(StrPadRight("2xx responses:", strLength)+"%d\n", stat.Code2xx)
 	}
 
 	if stat.Code3xx > 0 {
-		fmt.Printf(strPadRight("3xx responses:", strLength)+"%d\n", stat.Code3xx)
+		fmt.Printf(StrPadRight("3xx responses:", strLength)+"%d\n", stat.Code3xx)
+	}
+
+	if stat.Code4xx > 0 {
+		fmt.Printf(StrPadRight("4xx responses:", strLength)+"%d\n", stat.Code4xx)
 	}
 
 	if stat.Code5xx > 0 {
-		fmt.Printf(strPadRight("5xx responses:", strLength)+"%d\n", stat.Code5xx)
+		fmt.Printf(StrPadRight("5xx responses:", strLength)+"%d\n", stat.Code5xx)
 	}
 
 	if stat.OtherCodes > 0 {
-		fmt.Printf(strPadRight("Other responses:", strLength)+"%d\n", stat.OtherCodes)
+		fmt.Printf(StrPadRight("Other responses:", strLength)+"%d\n", stat.OtherCodes)
 	}
 
 	fmt.Println(
-		strPadRight("\nConnection Metrics:", strLength+3) +
-			strPadRight("(avg)", 13) +
-			strPadRight("(median)", 17) +
-			strPadRight("(min)", 15) +
-			strPadRight("(max)", 15),
+		StrPadRight("\nConnection Metrics:", strLength+3) +
+			StrPadRight("(avg)", 13) +
+			StrPadRight("(median)", 17) +
+			StrPadRight("(min)", 15) +
+			StrPadRight("(max)", 15),
 	)
 
 	printDurations(
@@ -97,8 +121,8 @@ func PrintResults(stat statistics.Statistics) {
 		fmt.Println("\nPercentage of the requests served within a certain time (ms):")
 
 		for _, result := range stat.TotalTimePercentage {
-			fmt.Print(strPadRight(fmt.Sprintf("%d%%", result.Segment*10), 7))
-			fmt.Print(strPadRight(fmt.Sprintf("%.3f ms", toMilliseconds((result.Min+result.Max)/2)), 15))
+			fmt.Print(StrPadRight(fmt.Sprintf("%d%%", result.Segment*10), 7))
+			fmt.Print(StrPadRight(fmt.Sprintf("%.3f ms", toMilliseconds((result.Min+result.Max)/2)), 15))
 			fmt.Printf("(%.3f - %.3f ms)\n", toMilliseconds(result.Min), toMilliseconds(result.Max))
 		}
 	}
@@ -128,7 +152,7 @@ func toTimeString(duration time.Duration) string {
 	}
 }
 
-func strPadRight(string string, count int) string {
+func StrPadRight(string string, count int) string {
 	padLength := count - len(string)
 
 	if padLength <= 0 {
@@ -140,10 +164,10 @@ func strPadRight(string string, count int) string {
 
 func printDurations(title string, avg, median, min, max string, strLength int) {
 	fmt.Println(
-		strPadRight(title, strLength) +
-			strPadRight(fmt.Sprintf("%s", avg), 15) +
-			strPadRight(fmt.Sprintf("%s", median), 15) +
-			strPadRight(fmt.Sprintf("%s", min), 15) +
-			strPadRight(fmt.Sprintf("%s", max), 15),
+		StrPadRight(title, strLength) +
+			StrPadRight(fmt.Sprintf("%s", avg), 15) +
+			StrPadRight(fmt.Sprintf("%s", median), 15) +
+			StrPadRight(fmt.Sprintf("%s", min), 15) +
+			StrPadRight(fmt.Sprintf("%s", max), 15),
 	)
 }

@@ -18,10 +18,10 @@ type ErrorResult struct {
 }
 
 type Statistics struct {
-	TotalTimeAvg,
-	TotalTimeMin,
-	TotalTimeMax,
-	TotalTimeMedian,
+	RequestTimeAvg,
+	RequestTimeMin,
+	RequestTimeMax,
+	RequestTimeMedian,
 
 	TotalTime,
 
@@ -57,6 +57,7 @@ type Statistics struct {
 	TotalRequests,
 	Code2xx,
 	Code3xx,
+	Code4xx,
 	Code5xx,
 	OtherCodes int
 
@@ -64,11 +65,12 @@ type Statistics struct {
 }
 
 func GetStatistics(results []tester.MeasurementResult, testDuration time.Duration) (Statistics, error) {
-	var requestTimeAvg, requestTimeMin, requestTimeMax time.Duration
-	var dnsLookupAvg, dnsLookupMin, dnsLookupMax time.Duration
+	var errorRequests, successRequests, totalRequests, code2xx, code3xx, code4xx, code5xx, otherCodes int
+	var connectionEstablishedAvg, connectionEstablishedMin, connectionEstablishedMax time.Duration
 	var tcpConnectionAvg, tcpConnectionMin, tcpConnectionMax time.Duration
 	var tlsHandshakeAvg, tlsHandshakeMin, tlsHandshakeMax time.Duration
-	var connectionEstablishedAvg, connectionEstablishedMin, connectionEstablishedMax time.Duration
+	var requestTimeAvg, requestTimeMin, requestTimeMax time.Duration
+	var dnsLookupAvg, dnsLookupMin, dnsLookupMax time.Duration
 	var ttfbAvg, ttfbMin, ttfbMax time.Duration
 
 	errors := make(map[string]int)
@@ -76,8 +78,6 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 	var timingPool struct {
 		totalTime, dnsLookup, tcpConnection, tlsHandshake, connectionEstablished, ttfb []time.Duration
 	}
-
-	var errorRequests, successRequests, totalRequests, code2xx, code3xx, code5xx, otherCodes int
 
 	for _, result := range results {
 		if result.Error == nil && result.RequestResult.Error == nil {
@@ -127,6 +127,8 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 				code2xx++
 			} else if result.RequestResult.StatusCode >= 300 && result.RequestResult.StatusCode < 400 {
 				code3xx++
+			} else if result.RequestResult.StatusCode >= 400 && result.RequestResult.StatusCode < 500 {
+				code4xx++
 			} else if result.RequestResult.StatusCode >= 500 && result.RequestResult.StatusCode < 600 {
 				code5xx++
 			} else {
@@ -159,10 +161,10 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 	}
 
 	return Statistics{
-		TotalTimeAvg:        requestTimeAvg / time.Duration(len(results)),
-		TotalTimeMin:        requestTimeMin,
-		TotalTimeMax:        requestTimeMax,
-		TotalTimeMedian:     calculateDurationMedian(timingPool.totalTime),
+		RequestTimeAvg:      requestTimeAvg / time.Duration(len(results)),
+		RequestTimeMin:      requestTimeMin,
+		RequestTimeMax:      requestTimeMax,
+		RequestTimeMedian:   calculateDurationMedian(timingPool.totalTime),
 		TotalTimePercentage: splitDataIntoSegments(timingPool.totalTime, 10),
 
 		DNSLookupAvg:    dnsLookupAvg / time.Duration(len(results)),
@@ -196,6 +198,7 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 		TotalRequests:   totalRequests,
 		Code2xx:         code2xx,
 		Code3xx:         code3xx,
+		Code4xx:         code4xx,
 		Code5xx:         code5xx,
 		OtherCodes:      otherCodes,
 
