@@ -11,5 +11,7 @@ fi
 [ -f $EXECUTABLE_NAME ] && rm $EXECUTABLE_NAME
 
 go build \
-  -ldflags "-X 'github.com/vpominchuk/$APP_NAME/src/app.ExecutableName=$APP_NAME' -X 'github.com/vpominchuk/$APP_NAME/src/app.GitCommit=`git rev-list --count HEAD`'" \
+  -ldflags "-X 'github.com/vpominchuk/$APP_NAME/src/app.ExecutableName=$APP_NAME' \
+    -X 'github.com/vpominchuk/$APP_NAME/src/app.GitCommit=`git rev-list --count HEAD`' \
+    -X 'github.com/vpominchuk/$APP_NAME/src/app.GitTag=`git describe --tags $(git rev-list --tags --max-count=1)`'" \
   -o $EXECUTABLE_NAME
