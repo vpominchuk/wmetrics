@@ -43,6 +43,7 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./wmetrics.exe
         asset_name: wmetrics.exe
+        asset_content_type: application/octet-stream
 
 # Build for Windows 32
     - name: Build Windows 32
@@ -56,6 +57,7 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./wmetrics.exe
         asset_name: wmetrics.exe
+        asset_content_type: application/octet-stream
 
 # Build for Linux 64
     - name: Build Linux 64
@@ -69,6 +71,7 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./wmetrics
         asset_name: wmetrics
+        asset_content_type: application/octet-stream
 
 # Build for Linux 32
     - name: Build Linux 32
@@ -82,8 +85,9 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./wmetrics
         asset_name: wmetrics
+        asset_content_type: application/octet-stream
 
-# Build for Mac OS 64
+# Build for macOS 64
     - name: Build Mac OS 64
       run: GOOS=darwin GOARCH=amd64 ./build
 
@@ -95,4 +99,5 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./wmetrics
         asset_name: wmetrics
+        asset_content_type: application/octet-stream
         
