@@ -5,8 +5,16 @@ import (
 	"fmt"
 	"github.com/vpominchuk/wmetrics/src/app"
 	"github.com/vpominchuk/wmetrics/src/formatter"
+	"strings"
 	"time"
 )
+
+type stringArrayArgument struct {
+	Name         string
+	help         string
+	defaultValue []string
+	Value        *[]string
+}
 
 type stringArgument struct {
 	Name         string
@@ -57,6 +65,18 @@ type Arguments struct {
 	ContentType           stringArgument
 	FormData              stringArgument
 	OutputFormat          stringArgument
+	CustomHeaders         stringArrayArgument
+}
+
+type multipleStringValues []string
+
+func (s *multipleStringValues) String() string {
+	return strings.Join(*s, "\n")
+}
+
+func (s *multipleStringValues) Set(value string) error {
+	*s = append(*s, value)
+	return nil
 }
 
 var arguments = Arguments{
@@ -159,6 +179,12 @@ var arguments = Arguments{
 		Name: "O", defaultValue: "std",
 		help: "Output `format`. Allowed values (std, text, json)",
 	},
+
+	CustomHeaders: stringArrayArgument{
+		Name: "H", defaultValue: nil,
+		help: "Custom `header`. For example: \"Accept-Encoding: gzip, deflate\"." +
+			" Multiple headers can be provided with multiple -H flags.",
+	},
 }
 
 func (arguments *Arguments) init() {
@@ -248,6 +274,10 @@ func (arguments *Arguments) init() {
 		arguments.OutputFormat.Name, arguments.OutputFormat.defaultValue,
 		arguments.OutputFormat.help,
 	)
+
+	var headers multipleStringValues
+	flag.Var(&headers, arguments.CustomHeaders.Name, arguments.CustomHeaders.help)
+	arguments.CustomHeaders.Value = (*[]string)(&headers)
 
 	flag.Usage = customUsage
 

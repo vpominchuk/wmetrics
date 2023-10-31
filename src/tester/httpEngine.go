@@ -158,6 +158,14 @@ func (engine *HttpEngine) setHeaders(parameters Parameters, request *http.Reques
 	if parameters.FormData != "" {
 		request.Header.Set("content-type", "application/x-www-form-urlencoded")
 	}
+
+	if parameters.CustomHeaders != nil && len(parameters.CustomHeaders) > 0 {
+		for _, header := range parameters.CustomHeaders {
+			headerParts := strings.SplitN(header, ":", 2)
+
+			request.Header.Set(headerParts[0], headerParts[1])
+		}
+	}
 }
 
 func (engine *HttpEngine) newClient(parameters Parameters, requestHost string) *http.Client {

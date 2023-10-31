@@ -111,6 +111,7 @@ func getCLIParameters() tester.Parameters {
 		ContentType:           *arguments.ContentType.Value,
 		FormData:              *arguments.FormData.Value,
 		OutputFormat:          *arguments.OutputFormat.Value,
+		CustomHeaders:         *arguments.CustomHeaders.Value,
 	}
 }
 
