@@ -26,7 +26,7 @@ go install
 ```
 
 ## Pre-built Binaries
-You can download pre-built binaries for Linux, macOS, and Windows from the [Releases](/releases) page.
+You can download pre-built binaries for Linux, macOS, and Windows from the [Releases](https://github.com/vpominchuk/wmetrics/releases) page.
 
 
 ## Build

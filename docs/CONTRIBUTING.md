@@ -18,11 +18,11 @@ please follow these guidelines to ensure a smooth contribution process.
 There are several ways to contribute to this project:
 
 ### Reporting Bugs
-If you encounter a bug while using this tool, please report it by [creating an issue](/issues/new?template=bug_report.md).
+If you encounter a bug while using this tool, please report it by [creating an issue](https://github.com/vpominchuk/wmetrics/issues/new?assignees=&labels=&projects=&template=bug_report.md&title=%5BBUG%5D).
 Be sure to provide as much detail as possible, including the steps to reproduce the issue, the environment you're using, and any error messages.
 
 ### Suggesting Enhancements
-If you have an idea for how to improve this tool, please [create an issue](/issues/new?template=feature_request.md) to describe your suggestion.
+If you have an idea for how to improve this tool, please [create an issue](https://github.com/vpominchuk/wmetrics/issues/new?assignees=&labels=&projects=&template=feature_request.md&title=%5BFEATURE%5D) to describe your suggestion.
 Be sure to provide as much detail as possible, including examples of how the enhancement would work and how it would benefit other users.
 
 ### Submitting Code Changes
