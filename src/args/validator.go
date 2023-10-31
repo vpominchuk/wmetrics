@@ -2,10 +2,10 @@ package args
 
 import (
 	"fmt"
+	"github.com/pominchuk/wmetrics/src/app"
+	"github.com/pominchuk/wmetrics/src/formatter"
 	"slices"
 	"strings"
-	"webmetrics/wmetrics/src/app"
-	"webmetrics/wmetrics/src/formatter"
 )
 
 func Validate(arguments Arguments) error {

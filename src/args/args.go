@@ -3,8 +3,8 @@ package args
 import (
 	"flag"
 	"fmt"
+	"github.com/pominchuk/wmetrics/src/app"
 	"time"
-	"webmetrics/wmetrics/src/app"
 )
 
 type stringArgument struct {

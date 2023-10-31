@@ -3,10 +3,10 @@ package formatter
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pominchuk/wmetrics/src/statistics"
 	"log"
 	"strings"
 	"time"
-	"webmetrics/wmetrics/src/statistics"
 )
 
 func PrintJsonResults(stat statistics.Statistics, pretty bool) {

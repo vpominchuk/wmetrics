@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/pominchuk/wmetrics/src/app"
+	commandLine "github.com/pominchuk/wmetrics/src/args"
+	"github.com/pominchuk/wmetrics/src/formatter"
+	"github.com/pominchuk/wmetrics/src/statistics"
+	"github.com/pominchuk/wmetrics/src/tester"
 	"github.com/schollz/progressbar/v3"
 	"log"
 	"net/url"
 	"os"
 	"strings"
 	"time"
-	"webmetrics/wmetrics/src/app"
-	commandLine "webmetrics/wmetrics/src/args"
-	"webmetrics/wmetrics/src/formatter"
-	"webmetrics/wmetrics/src/statistics"
-	"webmetrics/wmetrics/src/tester"
 )
 
 func main() {

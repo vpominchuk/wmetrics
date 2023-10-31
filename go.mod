@@ -1,4 +1,4 @@
-module webmetrics/wmetrics
+module github.com/pominchuk/wmetrics
 
 go 1.21
 

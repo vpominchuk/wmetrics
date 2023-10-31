@@ -1,9 +1,9 @@
 package statistics
 
 import (
+	"github.com/pominchuk/wmetrics/src/tester"
 	"slices"
 	"time"
-	"webmetrics/wmetrics/src/tester"
 )
 
 type QuantileResult struct {
