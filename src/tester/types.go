@@ -29,6 +29,7 @@ type Parameters struct {
 	ContentType           string
 	FormData              string
 	OutputFormat          string
+	CustomHeaders         []string
 }
 
 type TestEngine interface {
