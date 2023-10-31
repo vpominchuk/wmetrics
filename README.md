@@ -19,7 +19,10 @@
 To install `wmetrics`, you need to have Go installed on your system. Then, run the following command:
 
 ```bash
-go get github.com/vpominchuk/wmetrics
+git clone https://github.com/vpominchuk/wmetrics
+cd wmetrics
+go install
+./build
 ```
 
 ## Usage
