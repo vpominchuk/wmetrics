@@ -25,6 +25,9 @@ go install
 ./build
 ```
 
+## Build
+To build the project for different platforms and architectures please follow our [Build Guidelines](docs/BUILD.md).
+
 ## Usage
 ```bash
 wmetrics [options] [http[s]://]hostname[:port][/path]
@@ -104,4 +107,4 @@ For more options and detailed usage, please refer to the program's help document
 This project is licensed under the [MIT License](MIT-LICENSE.txt).
 
 ## Contributing
-Contributions are welcome! If you would like to contribute to this project, please follow our [Contributing Guidelines](CONTRIBUTING.md).
+Contributions are welcome! If you would like to contribute to this project, please follow our [Contributing Guidelines](docs/CONTRIBUTING.md).

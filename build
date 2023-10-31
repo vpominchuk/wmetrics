@@ -1,7 +1,15 @@
 #!/bin/bash
 
 APP_NAME=wmetrics
+EXECUTABLE_NAME=wmetrics
+WIN_EXECUTABLE_NAME=wmetrics.exe
 
-[ -f $APP_NAME ] && rm $APP_NAME
+if [ "$GOOS" = "windows" ]; then
+    EXECUTABLE_NAME="$WIN_EXECUTABLE_NAME"
+fi
 
-go build -ldflags "-X 'github.com/vpominchuk/$APP_NAME/src/app.ExecutableName=$APP_NAME' -X 'github.com/vpominchuk/$APP_NAME/src/app.GitCommit=`git rev-list --count HEAD`'" -o $APP_NAME
+[ -f $EXECUTABLE_NAME ] && rm $EXECUTABLE_NAME
+
+go build \
+  -ldflags "-X 'github.com/vpominchuk/$APP_NAME/src/app.ExecutableName=$APP_NAME' -X 'github.com/vpominchuk/$APP_NAME/src/app.GitCommit=`git rev-list --count HEAD`'" \
+  -o $EXECUTABLE_NAME
