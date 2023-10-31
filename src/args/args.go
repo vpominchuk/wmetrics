@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/vpominchuk/wmetrics/src/app"
+	"github.com/vpominchuk/wmetrics/src/formatter"
 	"time"
 )
 
@@ -248,6 +249,8 @@ func (arguments *Arguments) init() {
 		arguments.OutputFormat.help,
 	)
 
+	flag.Usage = customUsage
+
 	flag.Parse()
 }
 
@@ -257,10 +260,32 @@ func GetArguments() (Arguments, []string) {
 }
 
 func Usage() {
+	flag.Usage()
+}
+
+func customUsage() {
 	fmt.Fprintf(
 		flag.CommandLine.Output(), "Usage: %s [options] http[s]://]hostname[:port][/path]\n", app.ExecutableName,
 	)
 	fmt.Fprint(flag.CommandLine.Output(), "Options are:\n")
-	flag.PrintDefaults()
+	customPrintDefaults()
 	fmt.Fprintf(flag.CommandLine.Output(), "\nVersion: %s\n", app.VersionString)
+}
+
+func customPrintDefaults() {
+	strLength := 30
+	flag.VisitAll(
+		func(f *flag.Flag) {
+			name, usage := flag.UnquoteUsage(f)
+
+			usageMessage := formatter.StrPadRight(fmt.Sprintf("  -%s %s", f.Name, name), strLength)
+			usageMessage += fmt.Sprintf(" %s", usage)
+
+			if f.DefValue != "" {
+				usageMessage += fmt.Sprintf(" (default: %v)", f.DefValue)
+			}
+
+			fmt.Println(usageMessage)
+		},
+	)
 }
