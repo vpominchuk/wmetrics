@@ -2,8 +2,8 @@ package args
 
 import (
 	"fmt"
-	"github.com/pominchuk/wmetrics/src/app"
-	"github.com/pominchuk/wmetrics/src/formatter"
+	"github.com/vpominchuk/wmetrics/src/app"
+	"github.com/vpominchuk/wmetrics/src/formatter"
 	"slices"
 	"strings"
 )

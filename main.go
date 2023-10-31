@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/pominchuk/wmetrics/src/app"
-	commandLine "github.com/pominchuk/wmetrics/src/args"
-	"github.com/pominchuk/wmetrics/src/formatter"
-	"github.com/pominchuk/wmetrics/src/statistics"
-	"github.com/pominchuk/wmetrics/src/tester"
 	"github.com/schollz/progressbar/v3"
+	"github.com/vpominchuk/wmetrics/src/app"
+	commandLine "github.com/vpominchuk/wmetrics/src/args"
+	"github.com/vpominchuk/wmetrics/src/formatter"
+	"github.com/vpominchuk/wmetrics/src/statistics"
+	"github.com/vpominchuk/wmetrics/src/tester"
 	"log"
 	"net/url"
 	"os"

@@ -3,7 +3,7 @@ package args
 import (
 	"flag"
 	"fmt"
-	"github.com/pominchuk/wmetrics/src/app"
+	"github.com/vpominchuk/wmetrics/src/app"
 	"time"
 )
 

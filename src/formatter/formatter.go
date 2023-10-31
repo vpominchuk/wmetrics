@@ -3,7 +3,7 @@ package formatter
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pominchuk/wmetrics/src/statistics"
+	"github.com/vpominchuk/wmetrics/src/statistics"
 	"log"
 	"strings"
 	"time"

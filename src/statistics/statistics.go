@@ -1,7 +1,7 @@
 package statistics
 
 import (
-	"github.com/pominchuk/wmetrics/src/tester"
+	"github.com/vpominchuk/wmetrics/src/tester"
 	"slices"
 	"time"
 )
