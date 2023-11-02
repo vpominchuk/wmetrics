@@ -38,28 +38,29 @@ wmetrics [options] [http[s]://]hostname[:port][/path]
 ```
 
 ## Options
-| Option | Description                                                                                                                               |
-|--------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| -4     | Resolve IPv4 addresses only (default true).                                                                                               |
-| -6     | Resolve IPv6 addresses only.                                                                                                              |
-| -C file | Client PEM certificate file.                                                                                                              |
-| -F string | Form data.                                                                                                                                |
-| -H header | Custom header. For example: "Accept-Encoding: gzip, deflate". Multiple headers can be provided with multiple -H flags. |
-| -O format | Output format (std, text, json) (default "std").                                                                                          |
-| -P URL | Use a proxy (complete URL or "host[:port]"). Supported schemes: "http," "https," and "socks5."                                            |
-| -T string | Content type (default "application/json").                                                                                                |
-| -c requests | Number of concurrent requests (default 1).                                                                                                |
-| -d string | Post data as a string.                                                                                                                    |
-| -f file | Post data from a file.                                                                                                                    |
-| -i | Allow insecure SSL connections.                                                                                                           |
-| -k | Use HTTP KeepAlive feature.                                                                                                               |
-| -km connections | Max idle connections (default 100).                                                                                                       |
-| -kt timeout | Max idle connections timeout in ms (default 1m30s).                                                                                       |
-| -m method | HTTP method (default "GET").                                                                                                              |
-| -n requests | Number of requests to perform (default 1).                                                                                                |
-| -s Milliseconds | Maximum wait time for each response (default 30s).                                                                                        |
-| -tt timeout | TLS handshake timeout in ms (default 10s).                                                                                                |
-| -u User Agent | User Agent (default "wmetrics/v0.0.1").                                                                                                   |
+| Option | Description                                                                                                                                     |
+|--------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| -4     | Resolve IPv4 addresses only (default true).                                                                                                     |
+| -6     | Resolve IPv6 addresses only.                                                                                                                    |
+| -C file | Client PEM certificate file.                                                                                                                    |
+| -F string | Form data.                                                                                                                                      |
+| -H header | Custom header. For example: "Accept-Encoding: gzip, deflate". Multiple headers can be provided with multiple -H flags.                          |
+| -O format | Output format (std, text, json) (default "std").                                                                                                |
+| -P URL | Use a proxy (complete URL or "host[:port]"). Supported schemes: "http," "https," and "socks5."                                                  |
+| -T string | Content type (default "application/json").                                                                                                      |
+| -c requests | Number of concurrent requests (default 1).                                                                                                      |
+| -d string | Post data as a string.                                                                                                                          |
+| -f file | Post data from a file.                                                                                                                          |
+| -i | Allow insecure SSL connections.                                                                                                                 |
+| -k | Use HTTP KeepAlive feature.                                                                                                                     |
+| -km connections | Max idle connections (default 100).                                                                                                             |
+| -kt timeout | Max idle connections timeout in ms (default 1m30s).                                                                                             |
+| -m method | HTTP method (default "GET").                                                                                                                    |
+| -n requests | Number of requests to perform (default 1).                                                                                                      |
+| -s Milliseconds | Maximum wait time for each response (default 30s).                                                                                              |
+| -t time | Time limit (1s, 200ms, ...). If the time limit is reached, wmetrics will interrupt the test and print the results.                              |
+| -tt timeout | TLS handshake timeout in ms (default 10s).                                                                                                      |
+| -u User Agent | User Agent (default "wmetrics/v0.0.1").                                                                                                         |
 | -ut User Agent Template | Use User Agent Template. Allowed values (chrome, firefox, edge)[-(linux, mac, android, iphone, ipod, ipad)]. Use -ut list to see all templates. |
 
 

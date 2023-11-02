@@ -35,23 +35,33 @@ func (engine *HttpEngine) Measure(
 	parameters.Method = strings.ToUpper(parameters.Method)
 
 	results := make([]MeasurementResult, 0, parameters.Requests)
-	concurrencyCh := make(chan int, parameters.Concurrency)
-	resultsCh := make(chan MeasurementResult, parameters.Requests)
+	concurrencyCh := make(chan bool, parameters.Concurrency)
 
 	var wg sync.WaitGroup
 	var lastOnProgressCalled int64 = 0
 	var testStartTime time.Time
-	var testDuration time.Duration
-
-	wg.Add(parameters.Requests)
 
 	testStartTime = time.Now()
 
-	for requestNumber := 0; requestNumber < parameters.Requests; requestNumber++ {
-		concurrencyCh <- requestNumber
+	for requestNumber := 0; !engine.timeLimitReached(
+		testStartTime, parameters.TimeLimit,
+	) || requestNumber < parameters.Requests; requestNumber++ {
+		if parameters.TimeLimit > 0 && engine.timeLimitReached(testStartTime, parameters.TimeLimit) {
+			break
+		}
+
+		concurrencyCh <- true
+		wg.Add(1)
 
 		go func() {
-			defer wg.Done()
+			defer func() {
+				<-concurrencyCh
+				wg.Done()
+			}()
+
+			if parameters.TimeLimit > 0 && engine.timeLimitReached(testStartTime, parameters.TimeLimit) {
+				return
+			}
 
 			result, err := engine.request(parameters)
 
@@ -62,30 +72,24 @@ func (engine *HttpEngine) Measure(
 				onProgress(engine.Progress)
 			}
 
-			resultsCh <- MeasurementResult{
-				RequestResult: result,
-				Error:         err,
-			}
-
-			<-concurrencyCh
+			results = append(
+				results, MeasurementResult{
+					RequestResult: result,
+					Error:         err,
+				},
+			)
 		}()
 	}
 
-	go func() {
-		wg.Wait()
-
-		testDuration = time.Now().Sub(testStartTime)
-
-		close(concurrencyCh)
-		close(resultsCh)
-	}()
-
-	for result := range resultsCh {
-		results = append(results, result)
-	}
+	wg.Wait()
+	close(concurrencyCh)
 
 	onProgress(engine.Progress)
-	return results, testDuration
+	return results, time.Now().Sub(testStartTime)
+}
+
+func (engine *HttpEngine) timeLimitReached(testStartTime time.Time, timeLimit time.Duration) bool {
+	return time.Now().Sub(testStartTime) >= timeLimit
 }
 
 func (engine *HttpEngine) updateProgress(updateFailedRequests bool) {

@@ -15,7 +15,7 @@ func Validate(arguments Arguments) error {
 		return fmt.Errorf("post data can only be specified once")
 	}
 
-	if *arguments.Requests.Value < *arguments.Concurrency.Value {
+	if *arguments.TimeLimit.Value == 0 && *arguments.Requests.Value < *arguments.Concurrency.Value {
 		return fmt.Errorf("cannot use concurrency level greater than total number of requests")
 	}
 

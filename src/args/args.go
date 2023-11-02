@@ -66,6 +66,7 @@ type Arguments struct {
 	FormData              stringArgument
 	OutputFormat          stringArgument
 	CustomHeaders         stringArrayArgument
+	TimeLimit             durationArgument
 }
 
 type multipleStringValues []string
@@ -92,7 +93,7 @@ var arguments = Arguments{
 
 	Timeout: durationArgument{
 		Name: "s", defaultValue: 30 * time.Second,
-		help: "`Milliseconds` to max. wait for each response.",
+		help: "`time` (30s, 800ms, ...) to max. wait for each response",
 	},
 
 	Method: stringArgument{
@@ -122,7 +123,7 @@ var arguments = Arguments{
 
 	IdleConnTimeout: durationArgument{
 		Name: "kt", defaultValue: 90 * time.Second,
-		help: "Max idle connections `timeout` in ms",
+		help: "Max idle connections `timeout` (90s, 800ms, ...)",
 	},
 
 	Proxy: stringArgument{
@@ -132,7 +133,7 @@ var arguments = Arguments{
 
 	TLSHandshakeTimeout: durationArgument{
 		Name: "tt", defaultValue: 10 * time.Second,
-		help: "TLS handshake `timeout` in ms",
+		help: "TLS handshake `timeout` (10s, 800ms, ...)",
 	},
 
 	IPv4Only: boolArgument{
@@ -184,6 +185,12 @@ var arguments = Arguments{
 		Name: "H", defaultValue: nil,
 		help: "Custom `header`. For example: \"Accept-Encoding: gzip, deflate\"." +
 			" Multiple headers can be provided with multiple -H flags.",
+	},
+
+	TimeLimit: durationArgument{
+		Name: "t", defaultValue: 0,
+		help: "`Time` limit (1s, 200ms, ...). If the time limit is reached, " + app.ExecutableName +
+			" will interrupt the test and print the results.",
 	},
 }
 
@@ -278,6 +285,11 @@ func (arguments *Arguments) init() {
 	var headers multipleStringValues
 	flag.Var(&headers, arguments.CustomHeaders.Name, arguments.CustomHeaders.help)
 	arguments.CustomHeaders.Value = (*[]string)(&headers)
+
+	arguments.TimeLimit.Value = flag.Duration(
+		arguments.TimeLimit.Name, arguments.TimeLimit.defaultValue,
+		arguments.TimeLimit.help,
+	)
 
 	flag.Usage = customUsage
 
