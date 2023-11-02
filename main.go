@@ -112,12 +112,19 @@ func getCLIParameters() tester.Parameters {
 		FormData:              *arguments.FormData.Value,
 		OutputFormat:          *arguments.OutputFormat.Value,
 		CustomHeaders:         *arguments.CustomHeaders.Value,
+		TimeLimit:             *arguments.TimeLimit.Value,
 	}
 }
 
 func buildProgressBar(parameters tester.Parameters) *progressbar.ProgressBar {
+	progressBarMax := parameters.Requests
+
+	if parameters.TimeLimit > 0 {
+		progressBarMax = -1
+	}
+
 	return progressbar.NewOptions(
-		parameters.Requests,
+		progressBarMax,
 		progressbar.OptionFullWidth(),
 		progressbar.OptionShowCount(),
 	)
@@ -126,11 +133,21 @@ func buildProgressBar(parameters tester.Parameters) *progressbar.ProgressBar {
 func showGreetings(parameters tester.Parameters) {
 	fmt.Printf("%s %s\n", app.ExecutableName, app.VersionString)
 	fmt.Printf("Copyright %d Vasyl Pominchuk\n", time.Now().Year())
-	fmt.Printf(
-		"Performing %d requests with concurrency level of %d\n",
-		parameters.Requests,
-		parameters.Concurrency,
-	)
+
+	if parameters.TimeLimit > 0 {
+		fmt.Printf(
+			"Performing requests with concurrency level of %d with time limit of %s\n",
+			parameters.Concurrency,
+			parameters.TimeLimit,
+		)
+	} else {
+		fmt.Printf(
+			"Performing %d requests with concurrency level of %d\n",
+			parameters.Requests,
+			parameters.Concurrency,
+		)
+	}
+
 	fmt.Printf(
 		"%s %s\n",
 		parameters.Method,
