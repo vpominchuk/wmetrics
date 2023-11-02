@@ -30,6 +30,7 @@ type Parameters struct {
 	FormData              string
 	OutputFormat          string
 	CustomHeaders         []string
+	TimeLimit             time.Duration
 }
 
 type TestEngine interface {
