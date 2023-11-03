@@ -28,7 +28,7 @@ func main() {
 		bar = buildProgressBar(parameters)
 	}
 
-	results, testDuration := tester.Test(
+	results, testDuration, err := tester.Test(
 		parameters,
 		func(progress tester.RequestsProgress) {
 			if bar != nil {
@@ -36,6 +36,14 @@ func main() {
 			}
 		},
 	)
+
+	if err != nil {
+		log.Fatalf("Error: %v\n", err)
+	}
+
+	if len(results) == 0 {
+		log.Fatalf("Error: something went wrong. No test results\n")
+	}
 
 	stat, _ := statistics.GetStatistics(results, testDuration)
 

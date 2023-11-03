@@ -1,7 +1,7 @@
 package tester
 
 import (
-	"net/url"
+	"errors"
 	"time"
 )
 
@@ -10,18 +10,15 @@ var testers = map[string]TestEngine{
 	"https": &HttpEngine{},
 }
 
-func Test(parameters Parameters, onProgress func(progress RequestsProgress)) ([]MeasurementResult, time.Duration) {
-	resource, err := url.Parse(parameters.Resource)
-
-	if err != nil {
-		return []MeasurementResult{}, 0
-	}
-
-	testService, ok := testers[resource.Scheme]
+func Test(parameters Parameters, onProgress func(progress RequestsProgress)) (
+	[]MeasurementResult, time.Duration, error,
+) {
+	testService, ok := testers[parameters.Url.Scheme]
 
 	if ok {
-		return testService.Measure(parameters, onProgress)
+		measurementResult, duration := testService.Measure(parameters, onProgress)
+		return measurementResult, duration, nil
 	}
 
-	return []MeasurementResult{}, 0
+	return []MeasurementResult{}, 0, errors.New("unsupported protocol")
 }
