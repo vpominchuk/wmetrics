@@ -44,10 +44,10 @@ func PrintResults(stat statistics.Statistics) {
 
 	fmt.Println("\nPerformance Metrics:")
 	fmt.Printf(StrPadRight("Total time taken for tests:", strLength)+"%s\n", toTimeString(stat.TotalTime))
-	fmt.Printf(StrPadRight("Time per request (avg):", strLength)+"%.3f ms\n", toMilliseconds(stat.RequestTimeAvg))
-	fmt.Printf(StrPadRight("Time per request (median):", strLength)+"%.3f ms\n", toMilliseconds(stat.RequestTimeMedian))
-	fmt.Printf(StrPadRight("Time per request (min):", strLength)+"%.3f ms\n", toMilliseconds(stat.RequestTimeMin))
-	fmt.Printf(StrPadRight("Time per request (max):", strLength)+"%.3f ms\n", toMilliseconds(stat.RequestTimeMax))
+	fmt.Printf(StrPadRight("Time per request (avg):", strLength)+"%s\n", toTimeString(stat.RequestTimeAvg))
+	fmt.Printf(StrPadRight("Time per request (median):", strLength)+"%s\n", toTimeString(stat.RequestTimeMedian))
+	fmt.Printf(StrPadRight("Time per request (min):", strLength)+"%s\n", toTimeString(stat.RequestTimeMin))
+	fmt.Printf(StrPadRight("Time per request (max):", strLength)+"%s\n", toTimeString(stat.RequestTimeMax))
 	fmt.Printf(
 		StrPadRight("Requests per second:", strLength)+"%.2f\n", float64(stat.TotalRequests)/toSeconds(stat.TotalTime),
 	)
@@ -153,11 +153,7 @@ func toSeconds(duration time.Duration) float64 {
 }
 
 func toTimeString(duration time.Duration) string {
-	if duration < time.Second {
-		return fmt.Sprintf("%.3f ms", toMilliseconds(duration))
-	} else {
-		return fmt.Sprintf("%.3f s", toSeconds(duration))
-	}
+	return fmt.Sprintf("%.3f ms", toMilliseconds(duration))
 }
 
 func StrPadRight(string string, count int) string {
