@@ -307,7 +307,7 @@ func Usage() {
 
 func customUsage() {
 	fmt.Fprintf(
-		flag.CommandLine.Output(), "Usage: %s [options] http[s]://]hostname[:port][/path]\n", app.ExecutableName,
+		flag.CommandLine.Output(), "Usage: %s [options] URL_LIST\n", app.ExecutableName,
 	)
 	fmt.Fprint(flag.CommandLine.Output(), "Options are:\n")
 	customPrintDefaults()
