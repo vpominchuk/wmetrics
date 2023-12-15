@@ -17,7 +17,7 @@ type ErrorResult struct {
 	Count   int
 }
 
-type Statistics struct {
+type SingleUrlStatistics struct {
 	RequestTimeAvg,
 	RequestTimeMin,
 	RequestTimeMax,
@@ -66,7 +66,33 @@ type Statistics struct {
 	Errors []ErrorResult
 }
 
+type Statistics map[string]SingleUrlStatistics
+
 func GetStatistics(results []tester.MeasurementResult, testDuration time.Duration) (Statistics, error) {
+	var urls = make(map[string][]tester.MeasurementResult)
+
+	for _, result := range results {
+		url := result.RequestResult.Resource.Url.String()
+
+		urls[url] = append(urls[url], result)
+	}
+
+	statistics := make(Statistics)
+
+	for url, urlResults := range urls {
+		stat, err := calculateStatistics(urlResults, testDuration)
+
+		if err != nil {
+			return nil, err
+		}
+
+		statistics[url] = stat
+	}
+
+	return statistics, nil
+}
+
+func calculateStatistics(results []tester.MeasurementResult, testDuration time.Duration) (SingleUrlStatistics, error) {
 	var errorRequests, successRequests, totalRequests, code2xx, code3xx, code4xx, code5xx, otherCodes int
 	var connectionEstablishedAvg, connectionEstablishedMin, connectionEstablishedMax time.Duration
 	var tcpConnectionAvg, tcpConnectionMin, tcpConnectionMax time.Duration
@@ -169,7 +195,7 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 		poweredBy = results[0].RequestResult.Headers.PoweredBy
 	}
 
-	return Statistics{
+	return SingleUrlStatistics{
 		Server:              server,
 		PoweredBy:           poweredBy,
 		RequestTimeAvg:      requestTimeAvg / time.Duration(len(results)),

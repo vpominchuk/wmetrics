@@ -178,7 +178,7 @@ var arguments = Arguments{
 
 	OutputFormat: stringArgument{
 		Name: "O", defaultValue: "std",
-		help: "Output `format`. Allowed values (std, text, json)",
+		help: "Output `format`. Allowed values (std, text, json, json-pretty)",
 	},
 
 	CustomHeaders: stringArrayArgument{

@@ -18,14 +18,18 @@ import (
 )
 
 type HttpEngine struct {
-	Progress      RequestsProgress
-	progressMutex sync.Mutex
+	Progress       RequestsProgress
+	progressMutex  sync.Mutex
+	resourceFeeder *ResourceFeeder
 }
 
 func (engine *HttpEngine) Measure(
 	parameters Parameters,
+	resourceFeeder *ResourceFeeder,
 	onProgress func(progress RequestsProgress),
 ) ([]MeasurementResult, time.Duration) {
+	engine.resourceFeeder = resourceFeeder
+
 	engine.Progress = RequestsProgress{
 		TotalRequests:     parameters.Requests,
 		CompletedRequests: 0,
@@ -110,7 +114,7 @@ func (engine *HttpEngine) GetProgress() RequestsProgress {
 
 func (engine *HttpEngine) request(parameters Parameters) (RequestResult, error) {
 	request, err := engine.newRequest(parameters)
-	client := engine.newClient(parameters, request.Host)
+	client := engine.newClient(parameters, request)
 
 	if err != nil {
 		return RequestResult{}, err
@@ -140,6 +144,7 @@ func (engine *HttpEngine) request(parameters Parameters) (RequestResult, error) 
 	result.Status = response.Status
 	result.StatusCode = response.StatusCode
 	result.ContentLength = response.ContentLength
+	result.Resource.Url = response.Request.URL
 
 	engine.fillTLSInfo(response, &result)
 	engine.calculateDurations(&result)
@@ -172,7 +177,7 @@ func (engine *HttpEngine) setHeaders(parameters Parameters, request *http.Reques
 	}
 }
 
-func (engine *HttpEngine) newClient(parameters Parameters, requestHost string) *http.Client {
+func (engine *HttpEngine) newClient(parameters Parameters, request *http.Request) *http.Client {
 	proxyURL, _ := url.Parse(parameters.Proxy)
 
 	var network string
@@ -207,11 +212,11 @@ func (engine *HttpEngine) newClient(parameters Parameters, requestHost string) *
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
 
-	if parameters.Url.Scheme == "https" {
-		host, _, err := net.SplitHostPort(requestHost)
+	if request.URL.Scheme == "https" {
+		host, _, err := net.SplitHostPort(request.Host)
 
 		if err != nil {
-			host = requestHost
+			host = request.Host
 		}
 
 		certificates, err := engine.readClientPemCertificate(parameters.ClientCertificateFile)
@@ -287,9 +292,15 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 	var request *http.Request
 	var err error
 
+	resource, err := engine.resourceFeeder.GetNextValue()
+
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+
 	switch parameters.Method {
 	case http.MethodGet, http.MethodHead, http.MethodDelete:
-		request, err = http.NewRequest(parameters.Method, parameters.Resource, nil)
+		request, err = http.NewRequest(parameters.Method, resource.Url.String(), nil)
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		postDataFileReader, err := engine.getPostDataReader(parameters)
 
@@ -297,9 +308,9 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 			log.Fatalf("Error: %v", err)
 		}
 
-		request, err = http.NewRequest(parameters.Method, parameters.Resource, postDataFileReader)
+		request, err = http.NewRequest(parameters.Method, resource.Url.String(), postDataFileReader)
 	default:
-		request, err = http.NewRequest(http.MethodGet, parameters.Resource, nil)
+		request, err = http.NewRequest(http.MethodGet, resource.Url.String(), nil)
 	}
 
 	return request, err
