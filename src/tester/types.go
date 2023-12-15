@@ -6,9 +6,12 @@ import (
 	"time"
 )
 
+type Resource struct {
+	Url *url.URL
+}
+
 type Parameters struct {
-	Resource              string
-	Url                   *url.URL
+	Resources             []Resource
 	Requests              int
 	Concurrency           int
 	Timeout               time.Duration
@@ -34,7 +37,12 @@ type Parameters struct {
 }
 
 type TestEngine interface {
-	Measure(parameters Parameters, onProgress func(progress RequestsProgress)) ([]MeasurementResult, time.Duration)
+	Measure(
+		parameters Parameters,
+		resourceFeeder *ResourceFeeder,
+		onProgress func(progress RequestsProgress),
+	) ([]MeasurementResult, time.Duration)
+
 	GetProgress() RequestsProgress
 }
 
@@ -82,6 +90,7 @@ type ResponseHeaders struct {
 }
 
 type RequestResult struct {
+	Resource      Resource
 	Status        string // e.g. "200 OK"
 	StatusCode    int    // e.g. 200
 	ContentLength int64
@@ -99,4 +108,9 @@ func (result RequestResult) ToJson() ([]byte, error) {
 type MeasurementResult struct {
 	RequestResult RequestResult
 	Error         error
+}
+
+type ResourceFeeder struct {
+	Resources []Resource
+	index     int
 }

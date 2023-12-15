@@ -34,7 +34,7 @@ To build the project for different platforms and architectures please follow our
 
 ## Usage
 ```bash
-wmetrics [options] [http[s]://]hostname[:port][/path]
+wmetrics [options] URL_LIST
 ```
 
 ## Options

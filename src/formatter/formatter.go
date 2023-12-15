@@ -27,7 +27,26 @@ func PrintJsonResults(stat statistics.Statistics, pretty bool) {
 	fmt.Println(string(jsonData))
 }
 
-func PrintResults(stat statistics.Statistics) {
+func printTitle(title string) {
+	fmt.Println(title + ":")
+}
+
+func PrintResults(stats statistics.Statistics) {
+	urlNum := 0
+
+	for url, stat := range stats {
+		printTitle(url)
+		printSingleUrlResults(stat)
+
+		if urlNum < len(stats)-1 {
+			fmt.Print("─────────────────────────────────────────────────────────────────────────────────────\n\n")
+		}
+
+		urlNum++
+	}
+}
+
+func printSingleUrlResults(stat statistics.SingleUrlStatistics) {
 	strLength := 30
 
 	if stat.Server != "" {

@@ -85,20 +85,29 @@ func getCLIParameters() tester.Parameters {
 		os.Exit(1)
 	}
 
-	if len(args) == 0 || len(args) > 1 {
+	if len(args) == 0 {
 		commandLine.Usage()
 		os.Exit(1)
 	}
 
-	parsedUrl, err := url.Parse(args[0])
+	resources := make([]tester.Resource, 0, len(args))
 
-	if err != nil {
-		log.Fatalf("Error: %v\n", err)
+	for _, link := range args {
+		parsedUrl, err := url.Parse(link)
+
+		if err != nil {
+			log.Fatalf("Error: %v\n", err)
+		}
+
+		resources = append(
+			resources, tester.Resource{
+				Url: parsedUrl,
+			},
+		)
 	}
 
 	return tester.Parameters{
-		Resource:              args[0],
-		Url:                   parsedUrl,
+		Resources:             resources,
 		Requests:              *arguments.Requests.Value,
 		Concurrency:           *arguments.Concurrency.Value,
 		Timeout:               *arguments.Timeout.Value,
@@ -156,11 +165,13 @@ func showGreetings(parameters tester.Parameters) {
 		)
 	}
 
-	fmt.Printf(
-		"%s %s\n",
-		parameters.Method,
-		parameters.Resource,
-	)
+	fmt.Printf("%s", parameters.Method)
+
+	if parameters.Resources != nil && len(parameters.Resources) > 1 {
+		fmt.Printf(" %s\n", parameters.Resources[0].Url.String())
+	} else {
+		fmt.Printf(" List of URLs\n")
+	}
 
 	fmt.Printf("\n")
 }
