@@ -116,11 +116,6 @@ func calculateStatistics(results []tester.MeasurementResult, testDuration time.D
 			requestTimeMax = maxDuration(requestTimeMax, result.RequestResult.Durations.Total.Total)
 			timingPool.totalTime = append(timingPool.totalTime, result.RequestResult.Durations.Total.Total)
 
-			dnsLookupAvg += result.RequestResult.Durations.DNSLookup.Duration
-			dnsLookupMin = minDuration(dnsLookupMin, result.RequestResult.Durations.DNSLookup.Duration)
-			dnsLookupMax = maxDuration(dnsLookupMax, result.RequestResult.Durations.DNSLookup.Duration)
-			timingPool.dnsLookup = append(timingPool.dnsLookup, result.RequestResult.Durations.DNSLookup.Duration)
-
 			tcpConnectionAvg += result.RequestResult.Durations.TCPConnection.Duration
 			tcpConnectionMax = maxDuration(tcpConnectionMax, result.RequestResult.Durations.TCPConnection.Duration)
 			tcpConnectionMin = minDuration(tcpConnectionMin, result.RequestResult.Durations.TCPConnection.Duration)
@@ -167,6 +162,11 @@ func calculateStatistics(results []tester.MeasurementResult, testDuration time.D
 		} else {
 			errorRequests++
 		}
+
+		dnsLookupAvg += result.RequestResult.Durations.DNSLookup.Duration
+		dnsLookupMin = minDuration(dnsLookupMin, result.RequestResult.Durations.DNSLookup.Duration)
+		dnsLookupMax = maxDuration(dnsLookupMax, result.RequestResult.Durations.DNSLookup.Duration)
+		timingPool.dnsLookup = append(timingPool.dnsLookup, result.RequestResult.Durations.DNSLookup.Duration)
 
 		if result.Error != nil {
 			errors[result.Error.Error()]++

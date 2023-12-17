@@ -130,7 +130,11 @@ func (engine *HttpEngine) request(parameters Parameters) (RequestResult, error) 
 	var response *http.Response
 	response, err = client.Do(request)
 
+	result.Resource.Url = request.URL
+
 	result.Timing.TotalTime = time.Now()
+
+	engine.calculateDurations(&result)
 
 	if err != nil {
 		return result, &ResponseError{
@@ -144,10 +148,8 @@ func (engine *HttpEngine) request(parameters Parameters) (RequestResult, error) 
 	result.Status = response.Status
 	result.StatusCode = response.StatusCode
 	result.ContentLength = response.ContentLength
-	result.Resource.Url = response.Request.URL
 
 	engine.fillTLSInfo(response, &result)
-	engine.calculateDurations(&result)
 	engine.fillHeaders(response, &result)
 
 	return result, nil
