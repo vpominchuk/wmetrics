@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/schollz/progressbar/v3"
 	"github.com/vpominchuk/wmetrics/src/app"
@@ -17,6 +18,8 @@ import (
 
 func main() {
 	parameters := getCLIParameters()
+
+	correctNumberOfRequests(&parameters)
 
 	if canPrintGreetings(parameters.OutputFormat) {
 		showGreetings(parameters)
@@ -78,25 +81,35 @@ func printResults(format string, stat statistics.Statistics) {
 }
 
 func getCLIParameters() tester.Parameters {
-	arguments, args := commandLine.GetArguments()
+	arguments, urls := commandLine.GetArguments()
 
 	if err := commandLine.Validate(arguments); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	if len(args) == 0 {
+	if arguments.URLListFile.Value != nil && *arguments.URLListFile.Value != "" {
+		var err error
+		urls, err = getUrlsFromFile(*arguments.URLListFile.Value)
+
+		if err != nil {
+			log.Fatalf("Error: %v\n", err)
+		}
+	}
+
+	if len(urls) == 0 {
 		commandLine.Usage()
 		os.Exit(1)
 	}
 
-	resources := make([]tester.Resource, 0, len(args))
+	resources := make([]tester.Resource, 0, len(urls))
 
-	for _, link := range args {
-		parsedUrl, err := url.Parse(link)
+	for _, link := range urls {
+		parsedUrl, err := url.ParseRequestURI(link)
 
-		if err != nil {
-			log.Fatalf("Error: %v\n", err)
+		if err != nil || parsedUrl.Scheme == "" || parsedUrl.Host == "" {
+			stdError(fmt.Sprintf("* Warning: Skipping invalid url: %s\n", link))
+			continue
 		}
 
 		resources = append(
@@ -133,6 +146,38 @@ func getCLIParameters() tester.Parameters {
 	}
 }
 
+func stdError(message string) {
+	fmt.Fprintf(os.Stderr, message)
+}
+
+func correctNumberOfRequests(parameters *tester.Parameters) {
+	parameters.Requests = len(parameters.Resources) * parameters.Requests
+}
+
+func getUrlsFromFile(fileName string) ([]string, error) {
+	file, err := os.Open(fileName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	urls := make([]string, 0)
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		urls = append(urls, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return urls, nil
+}
+
 func buildProgressBar(parameters tester.Parameters) *progressbar.ProgressBar {
 	progressBarMax := parameters.Requests
 
@@ -153,24 +198,18 @@ func showGreetings(parameters tester.Parameters) {
 
 	if parameters.TimeLimit > 0 {
 		fmt.Printf(
-			"Performing requests with concurrency level of %d with time limit of %s\n",
+			"Performing [%s] requests with concurrency level of %d with time limit of %s\n",
+			parameters.Method,
 			parameters.Concurrency,
 			parameters.TimeLimit,
 		)
 	} else {
 		fmt.Printf(
-			"Performing %d requests with concurrency level of %d\n",
+			"Performing %d [%s] requests with concurrency level of %d\n",
 			parameters.Requests,
+			parameters.Method,
 			parameters.Concurrency,
 		)
-	}
-
-	fmt.Printf("%s", parameters.Method)
-
-	if parameters.Resources != nil && len(parameters.Resources) > 1 {
-		fmt.Printf(" %s\n", parameters.Resources[0].Url.String())
-	} else {
-		fmt.Printf(" List of URLs\n")
 	}
 
 	fmt.Printf("\n")

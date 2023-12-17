@@ -34,6 +34,7 @@ type Parameters struct {
 	OutputFormat          string
 	CustomHeaders         []string
 	TimeLimit             time.Duration
+	URLListFile           string
 }
 
 type TestEngine interface {

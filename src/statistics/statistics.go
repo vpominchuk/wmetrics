@@ -72,9 +72,11 @@ func GetStatistics(results []tester.MeasurementResult, testDuration time.Duratio
 	var urls = make(map[string][]tester.MeasurementResult)
 
 	for _, result := range results {
-		url := result.RequestResult.Resource.Url.String()
+		if result.RequestResult.Resource.Url != nil {
+			url := result.RequestResult.Resource.Url.String()
 
-		urls[url] = append(urls[url], result)
+			urls[url] = append(urls[url], result)
+		}
 	}
 
 	statistics := make(Statistics)

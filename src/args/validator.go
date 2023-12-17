@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/vpominchuk/wmetrics/src/app"
 	"github.com/vpominchuk/wmetrics/src/formatter"
+	"os"
 	"slices"
 	"strings"
 )
@@ -66,7 +67,28 @@ func Validate(arguments Arguments) error {
 		}
 	}
 
+	if err := validateUrlListFile(*arguments.URLListFile.Value); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func validateUrlListFile(urlListFile string) error {
+	if urlListFile == "" {
+		return nil
+	}
+
+	if !fileExists(urlListFile) {
+		return fmt.Errorf("url list file not found: %s", urlListFile)
+	}
+
+	return nil
+}
+
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	return !os.IsNotExist(err)
 }
 
 func getAllowedUserAgentTemplates() string {

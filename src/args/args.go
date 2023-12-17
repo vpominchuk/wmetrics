@@ -67,6 +67,7 @@ type Arguments struct {
 	OutputFormat          stringArgument
 	CustomHeaders         stringArrayArgument
 	TimeLimit             durationArgument
+	URLListFile           stringArgument
 }
 
 type multipleStringValues []string
@@ -192,6 +193,11 @@ var arguments = Arguments{
 		help: "`Time` limit (1s, 200ms, ...). If the time limit is reached, " + app.ExecutableName +
 			" will interrupt the test and print the results.",
 	},
+
+	URLListFile: stringArgument{
+		Name: "l", defaultValue: "",
+		help: "Path to a `file` with list of URLs",
+	},
 }
 
 func (arguments *Arguments) init() {
@@ -280,6 +286,11 @@ func (arguments *Arguments) init() {
 	arguments.OutputFormat.Value = flag.String(
 		arguments.OutputFormat.Name, arguments.OutputFormat.defaultValue,
 		arguments.OutputFormat.help,
+	)
+
+	arguments.URLListFile.Value = flag.String(
+		arguments.URLListFile.Name, arguments.URLListFile.defaultValue,
+		arguments.URLListFile.help,
 	)
 
 	var headers multipleStringValues
