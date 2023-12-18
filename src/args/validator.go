@@ -5,6 +5,7 @@ import (
 	"github.com/vpominchuk/wmetrics/src/app"
 	"github.com/vpominchuk/wmetrics/src/formatter"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -69,6 +70,21 @@ func Validate(arguments Arguments) error {
 
 	if err := validateUrlListFile(*arguments.URLListFile.Value); err != nil {
 		return err
+	}
+
+	if arguments.ExitWithErrorOnCode.Value != nil && len(*arguments.ExitWithErrorOnCode.Value) > 0 {
+		pattern := "(?i)^([0-9]{1,3}|[0-9]{1}xx)$"
+		re, err := regexp.Compile(pattern)
+
+		if err != nil {
+			return fmt.Errorf("invalid exit with error on code pattern: %s", pattern)
+		}
+
+		for _, code := range *arguments.ExitWithErrorOnCode.Value {
+			if !re.MatchString(code) {
+				return fmt.Errorf("invalid exit with error on code: %s", code)
+			}
+		}
 	}
 
 	return nil

@@ -50,6 +50,7 @@ wmetrics [options] URL_LIST
 | -T string               | Content type (default "application/json").                                                                                                      |
 | -c requests             | Number of concurrent requests (default 1).                                                                                                      |
 | -d string               | Post data as a string.                                                                                                                          |
+| -e code                 | Exit with error on HTTP code. Multiple code can be provided with multiple -e flags.                                                             |
 | -f file                 | Post data from a file.                                                                                                                          |
 | -i                      | Allow insecure SSL connections.                                                                                                                 |
 | -k                      | Use HTTP KeepAlive feature.                                                                                                                     |

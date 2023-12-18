@@ -68,6 +68,7 @@ type Arguments struct {
 	CustomHeaders         stringArrayArgument
 	TimeLimit             durationArgument
 	URLListFile           stringArgument
+	ExitWithErrorOnCode   stringArrayArgument
 }
 
 type multipleStringValues []string
@@ -198,6 +199,11 @@ var arguments = Arguments{
 		Name: "l", defaultValue: "",
 		help: "Path to a `file` with list of URLs",
 	},
+
+	ExitWithErrorOnCode: stringArrayArgument{
+		Name: "e", defaultValue: nil,
+		help: "Exit with error on HTTP `code`. Multiple codes can be provided with multiple -e flags. Example: -e 403 -e 3xx.",
+	},
 }
 
 func (arguments *Arguments) init() {
@@ -301,6 +307,10 @@ func (arguments *Arguments) init() {
 		arguments.TimeLimit.Name, arguments.TimeLimit.defaultValue,
 		arguments.TimeLimit.help,
 	)
+
+	var exitWithErrorOnCode multipleStringValues
+	flag.Var(&exitWithErrorOnCode, arguments.ExitWithErrorOnCode.Name, arguments.ExitWithErrorOnCode.help)
+	arguments.ExitWithErrorOnCode.Value = (*[]string)(&exitWithErrorOnCode)
 
 	flag.Usage = customUsage
 

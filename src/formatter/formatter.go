@@ -188,9 +188,9 @@ func StrPadRight(string string, count int) string {
 func printDurations(title string, avg, median, min, max string, strLength int) {
 	fmt.Println(
 		StrPadRight(title, strLength) +
-			StrPadRight(fmt.Sprintf("%s", avg), 15) +
-			StrPadRight(fmt.Sprintf("%s", median), 15) +
-			StrPadRight(fmt.Sprintf("%s", min), 15) +
-			StrPadRight(fmt.Sprintf("%s", max), 15),
+			StrPadRight(avg, 15) +
+			StrPadRight(median, 15) +
+			StrPadRight(min, 15) +
+			StrPadRight(max, 15),
 	)
 }

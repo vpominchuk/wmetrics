@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/pem"
+	"fmt"
 	"github.com/vpominchuk/wmetrics/src/app"
+	"github.com/vpominchuk/wmetrics/src/helpers"
 	"io"
 	"log"
 	"net"
@@ -12,6 +14,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -43,9 +46,8 @@ func (engine *HttpEngine) Measure(
 
 	var wg sync.WaitGroup
 	var lastOnProgressCalled int64 = 0
-	var testStartTime time.Time
 
-	testStartTime = time.Now()
+	testStartTime := time.Now()
 
 	for requestNumber := 0; !engine.timeLimitReached(
 		testStartTime, parameters.TimeLimit,
@@ -76,6 +78,8 @@ func (engine *HttpEngine) Measure(
 				onProgress(engine.Progress)
 			}
 
+			engine.processHttpCodes(parameters, &result)
+
 			results = append(
 				results, MeasurementResult{
 					RequestResult: result,
@@ -89,11 +93,11 @@ func (engine *HttpEngine) Measure(
 	close(concurrencyCh)
 
 	onProgress(engine.Progress)
-	return results, time.Now().Sub(testStartTime)
+	return results, time.Since(testStartTime)
 }
 
 func (engine *HttpEngine) timeLimitReached(testStartTime time.Time, timeLimit time.Duration) bool {
-	return time.Now().Sub(testStartTime) >= timeLimit
+	return time.Since(testStartTime) >= timeLimit
 }
 
 func (engine *HttpEngine) updateProgress(updateFailedRequests bool) {
@@ -195,8 +199,8 @@ func (engine *HttpEngine) newClient(parameters Parameters, request *http.Request
 	transport := &http.Transport{
 		DialContext: func(ctx context.Context, _, addr string) (net.Conn, error) {
 			return (&net.Dialer{
-				Timeout:   parameters.Timeout * time.Millisecond,
-				KeepAlive: parameters.IdleConnTimeout * time.Millisecond,
+				Timeout:   parameters.Timeout,
+				KeepAlive: parameters.IdleConnTimeout,
 			}).DialContext(ctx, network, addr)
 		},
 		MaxIdleConns:          parameters.MaxIdleConnections,
@@ -291,7 +295,6 @@ func (engine *HttpEngine) readClientPemCertificate(filename string) ([]tls.Certi
 }
 
 func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, error) {
-	var request *http.Request
 	var err error
 
 	resource, err := engine.resourceFeeder.GetNextValue()
@@ -302,7 +305,7 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 
 	switch parameters.Method {
 	case http.MethodGet, http.MethodHead, http.MethodDelete:
-		request, err = http.NewRequest(parameters.Method, resource.Url.String(), nil)
+		return http.NewRequest(parameters.Method, resource.Url.String(), nil)
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		postDataFileReader, err := engine.getPostDataReader(parameters)
 
@@ -310,12 +313,10 @@ func (engine *HttpEngine) newRequest(parameters Parameters) (*http.Request, erro
 			log.Fatalf("Error: %v", err)
 		}
 
-		request, err = http.NewRequest(parameters.Method, resource.Url.String(), postDataFileReader)
+		return http.NewRequest(parameters.Method, resource.Url.String(), postDataFileReader)
 	default:
-		request, err = http.NewRequest(http.MethodGet, resource.Url.String(), nil)
+		return http.NewRequest(http.MethodGet, resource.Url.String(), nil)
 	}
-
-	return request, err
 }
 
 func (engine *HttpEngine) getPostDataReader(parameters Parameters) (io.Reader, error) {
@@ -423,4 +424,32 @@ func (engine *HttpEngine) fillTLSInfo(response *http.Response, result *RequestRe
 func (engine *HttpEngine) fillHeaders(response *http.Response, result *RequestResult) {
 	result.Headers.Server = response.Header.Get("server")
 	result.Headers.PoweredBy = response.Header.Get("x-powered-by")
+}
+
+func (engine *HttpEngine) processHttpCodes(parameters Parameters, result *RequestResult) {
+	if parameters.ExitWithErrorOnCode != nil && len(parameters.ExitWithErrorOnCode) > 0 {
+		for _, code := range parameters.ExitWithErrorOnCode {
+			intCode, err := strconv.Atoi(code)
+
+			if err == nil {
+				if result.StatusCode == intCode {
+					result.Error = &HttpCodeError{
+						Err: fmt.Errorf("HTTP code: %d", result.StatusCode),
+					}
+				}
+			}
+
+			if match, err := helpers.RegexpStringMatch("(?i)^[0-9]{1}xx$", code); err == nil && match {
+				intCode, err := strconv.Atoi(code[:1])
+
+				if err == nil {
+					if result.StatusCode >= intCode*100 && result.StatusCode < (intCode+1)*100 {
+						result.Error = &HttpCodeError{
+							Err: fmt.Errorf("HTTP code: %d", result.StatusCode),
+						}
+					}
+				}
+			}
+		}
+	}
 }

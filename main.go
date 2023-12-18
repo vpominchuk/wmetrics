@@ -35,7 +35,11 @@ func main() {
 		parameters,
 		func(progress tester.RequestsProgress) {
 			if bar != nil {
-				bar.Set(progress.CompletedRequests)
+				err := bar.Set(progress.CompletedRequests)
+
+				if err != nil {
+					return
+				}
 			}
 		},
 	)
@@ -59,6 +63,22 @@ func main() {
 	if canPrintGreetings(parameters.OutputFormat) {
 		fmt.Printf("\n")
 	}
+
+	if haveErrors(stat) {
+		os.Exit(1)
+	}
+
+	os.Exit(0)
+}
+
+func haveErrors(stat statistics.Statistics) bool {
+	for _, singleUrlStat := range stat {
+		if len(singleUrlStat.Errors) > 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func canPrintProgressBar(format string) bool {
@@ -143,11 +163,12 @@ func getCLIParameters() tester.Parameters {
 		OutputFormat:          *arguments.OutputFormat.Value,
 		CustomHeaders:         *arguments.CustomHeaders.Value,
 		TimeLimit:             *arguments.TimeLimit.Value,
+		ExitWithErrorOnCode:   *arguments.ExitWithErrorOnCode.Value,
 	}
 }
 
 func stdError(message string) {
-	fmt.Fprintf(os.Stderr, message)
+	fmt.Fprint(os.Stderr, message)
 }
 
 func correctNumberOfRequests(parameters *tester.Parameters) {
