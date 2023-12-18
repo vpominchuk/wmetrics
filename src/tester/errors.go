@@ -19,3 +19,11 @@ type PostDataFileError struct {
 func (r *PostDataFileError) Error() string {
 	return fmt.Sprintf("[%s], %v", r.FileName, r.Err)
 }
+
+type HttpCodeError struct {
+	Err error
+}
+
+func (r *HttpCodeError) Error() string {
+	return fmt.Sprintf("Error: %v", r.Err)
+}
